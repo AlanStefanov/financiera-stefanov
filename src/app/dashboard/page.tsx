@@ -9,6 +9,7 @@ interface Stats {
   totalLoaned: number;
   totalCollected: number;
   remainingToCollect: number;
+  pendingLoans: number;
 }
 
 interface User {
@@ -16,7 +17,7 @@ interface User {
 }
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<Stats>({ totalClients: 0, activeLoans: 0, remainingPayments: 0, totalLoaned: 0, totalCollected: 0, remainingToCollect: 0 });
+  const [stats, setStats] = useState<Stats>({ totalClients: 0, activeLoans: 0, remainingPayments: 0, totalLoaned: 0, totalCollected: 0, remainingToCollect: 0, pendingLoans: 0 });
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User>({ role: 'operator' });
 
@@ -76,6 +77,7 @@ export default function DashboardPage() {
         }
 
         const activeLoans = activeAndApprovedLoans.filter((l: any) => l.status === 'active').length;
+        const pendingLoans = Array.isArray(loans) ? loans.filter((l: any) => l.status === 'orden').length : 0;
 
         setStats({
           totalClients: Array.isArray(clients) ? clients.length : 0,
@@ -84,6 +86,7 @@ export default function DashboardPage() {
           totalLoaned,
           totalCollected,
           remainingToCollect: totalToCollect,
+          pendingLoans,
         });
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -104,6 +107,39 @@ export default function DashboardPage() {
   return (
     <div>
       <h1 style={{ marginBottom: '1.5rem' }}>Dashboard</h1>
+
+      {user.role === 'admin' && stats.pendingLoans > 0 && (
+        <div style={{ 
+          background: '#fef3c7', 
+          border: '1px solid #f59e0b', 
+          borderRadius: 'var(--radius)', 
+          padding: '1rem', 
+          marginBottom: '1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2">
+              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+            </svg>
+            <span style={{ color: '#92400e', fontWeight: '600' }}>
+              Tienes {stats.pendingLoans} préstamo{stats.pendingLoans > 1 ? 's' : ''} pendiente{stats.pendingLoans > 1 ? 's' : ''} de aprobación
+            </span>
+          </div>
+          <a href="/dashboard/loans" style={{ 
+            background: '#d97706', 
+            color: 'white', 
+            padding: '0.5rem 1rem', 
+            borderRadius: 'var(--radius)',
+            textDecoration: 'none',
+            fontWeight: '500',
+            fontSize: '0.875rem'
+          }}>
+            Ver Préstamos
+          </a>
+        </div>
+      )}
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
         <div className="card">
