@@ -115,6 +115,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </header>
 
+      {menuOpen && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: '60px',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'white',
+            zIndex: 999,
+            overflowY: 'auto',
+            padding: '1rem'
+          }}
+        >
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {navLinks.map(link => (
+              <Link 
+                key={link.href} 
+                href={link.href}
+                onClick={() => setMenuOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '0.5rem',
+                  textDecoration: 'none',
+                  color: '#1e293b',
+                  backgroundColor: '#f1f5f9'
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+                  <path d={link.icon}/>
+                </svg>
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      )}
+
       <main className="container" style={{ flex: 1, paddingBottom: '3rem' }}>
         {children}
       </main>
