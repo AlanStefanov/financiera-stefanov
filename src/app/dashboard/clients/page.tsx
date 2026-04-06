@@ -1,0 +1,365 @@
+'use client';
+
+import { useEffect, useState, useRef } from 'react';
+
+interface Client {
+  id: number;
+  name: string;
+  phone: string;
+  address?: string;
+  dni_front?: string;
+  dni_back?: string;
+  created_by?: number;
+  creator_name?: string;
+  creator_lastname?: string;
+  is_active?: number;
+  created_at: string;
+}
+
+interface User {
+  role: string;
+}
+
+export default function ClientsPage() {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [user, setUser] = useState<User>({ role: 'operator' });
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [form, setForm] = useState({ name: '', phone: '', address: '', dni_front: '', dni_back: '' });
+  const frontInputRef = useRef<HTMLInputElement>(null);
+  const backInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchClients = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/clients', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setClients(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+    fetchClients();
+  }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'dni_front' | 'dni_back') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setForm(prev => ({ ...prev, [field]: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      
+      if (editingClient) {
+        const res = await fetch(`/api/clients/${editingClient.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(form),
+        });
+
+        if (res.ok) {
+          setForm({ name: '', phone: '', address: '', dni_front: '', dni_back: '' });
+          setEditingClient(null);
+          setShowForm(false);
+          fetchClients();
+        }
+      } else {
+        const res = await fetch('/api/clients', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(form),
+        });
+
+        if (res.ok) {
+          setForm({ name: '', phone: '', address: '', dni_front: '', dni_back: '' });
+          setShowForm(false);
+          fetchClients();
+        }
+      }
+    } catch (error) {
+      console.error('Error saving client:', error);
+    }
+  };
+
+  const handleEdit = (client: Client) => {
+    setEditingClient(client);
+    setForm({
+      name: client.name,
+      phone: client.phone,
+      address: client.address || '',
+      dni_front: '',
+      dni_back: ''
+    });
+    setShowForm(true);
+  };
+
+  const handleToggleActive = async (id: number, currentStatus: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`/api/clients/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ is_active: currentStatus === 0 ? 1 : 0 }),
+      });
+      fetchClients();
+    } catch (error) {
+      console.error('Error toggling client:', error);
+    }
+  };
+
+  const resetForm = () => {
+    setForm({ name: '', phone: '', address: '', dni_front: '', dni_back: '' });
+    setEditingClient(null);
+    setShowForm(false);
+  };
+  
+
+  if (loading) return <div>Cargando...</div>;
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h1 className="page-title">Clientes</h1>
+        <button onClick={() => { resetForm(); setShowForm(true); }} className="btn btn-primary">
+          {showForm ? 'Cancelar' : 'Nuevo Cliente'}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <form onSubmit={handleSubmit}>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">Nombre y Apellido</label>
+                <input
+                  type="text"
+                  className="input"
+                                    value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Teléfono</label>
+                <input
+                  type="tel"
+                  className="input"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label className="form-label">Dirección</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    type="text"
+                    className="input"
+                    value={form.address}
+                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                    style={{ flex: 1 }}
+                  />
+                  <a
+                    href={`https://www.google.com/maps/search/${encodeURIComponent(form.address + ', Buenos Aires, Argentina')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-secondary"
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap' }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    Buscar
+                  </a>
+                </div>
+                {form.address && (
+                  <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      type="checkbox"
+                      id="addressValidated"
+                      checked={!!form.address}
+                      onChange={() => {}}
+                      style={{ width: 'auto' }}
+                    />
+                    <label htmlFor="addressValidated" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                      Confirmo que la dirección es válida
+                    </label>
+                  </div>
+                )}
+              </div>
+              <div className="form-group">
+                <label className="form-label">DNI (Frente)</label>
+                <input
+                  ref={frontInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(e) => handleFileChange(e, 'dni_front')}
+                  style={{ padding: '0.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', width: '100%' }}
+                />
+                {form.dni_front && (
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <img src={form.dni_front} alt="DNI frente" style={{ width: '150px', height: '100px', objectFit: 'cover', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
+                  </div>
+                )}
+              </div>
+              <div className="form-group">
+                <label className="form-label">DNI (Dorso)</label>
+                <input
+                  ref={backInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(e) => handleFileChange(e, 'dni_back')}
+                  style={{ padding: '0.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', width: '100%' }}
+                />
+                {form.dni_back && (
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <img src={form.dni_back} alt="DNI dorso" style={{ width: '150px', height: '100px', objectFit: 'cover', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="form-actions">
+              <button type="submit" className="btn btn-primary">
+                {editingClient ? 'Actualizar Cliente' : 'Guardar Cliente'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div className="card">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Teléfono</th>
+              <th>DNI</th>
+              <th>Creado por</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {clients.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{ textAlign: 'center' }}>No hay clientes</td>
+              </tr>
+            ) : (
+              clients.map((client) => (
+                <tr key={client.id}>
+                  <td>{client.id}</td>
+                  <td>
+                    <div style={{ fontWeight: 500 }}>{client.name}</div>
+                    {client.address && <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>{client.address}</div>}
+                  </td>
+                  <td>{client.phone}</td>
+                  <td>
+                    <button 
+                      onClick={() => setSelectedClient(client)}
+                      style={{ 
+                        background: client.dni_front ? 'var(--success)' : 'var(--border)', 
+                        color: client.dni_front ? 'white' : 'var(--text-secondary)',
+                        border: 'none',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: 'var(--radius)',
+                        cursor: 'pointer',
+                        fontSize: '0.8125rem'
+                      }}
+                    >
+                      {client.dni_front ? 'Ver DNI' : 'Sin DNI'}
+                    </button>
+                  </td>
+                  <td>
+                    {client.creator_name ? `${client.creator_name} ${client.creator_lastname}` : '-'}
+                  </td>
+                  <td>
+                    <button onClick={() => handleEdit(client)} className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem', marginRight: '0.5rem' }}>
+                      Editar
+                    </button>
+                    {user.role === 'admin' && (
+                      <button onClick={() => handleToggleActive(client.id, client.is_active || 1)} className="btn btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}>
+                        {client.is_active === 0 ? 'Activar' : 'Desactivar'}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {selectedClient && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, padding: '1rem'
+        }} onClick={() => setSelectedClient(null)}>
+          <div className="card" style={{ maxWidth: '600px', width: '100%', maxHeight: '90vh', overflow: 'auto' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3>DNI de {selectedClient.name}</h3>
+              <button onClick={() => setSelectedClient(null)} className="btn btn-secondary" style={{ padding: '0.5rem' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>Frente</p>
+                {selectedClient.dni_front ? (
+                  <img src={selectedClient.dni_front} alt="DNI frente" style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
+                ) : (
+                  <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--background)', borderRadius: 'var(--radius)', color: 'var(--text-secondary)' }}>Sin imagen</div>
+                )}
+              </div>
+              <div>
+                <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>Dorso</p>
+                {selectedClient.dni_back ? (
+                  <img src={selectedClient.dni_back} alt="DNI dorso" style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
+                ) : (
+                  <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--background)', borderRadius: 'var(--radius)', color: 'var(--text-secondary)' }}>Sin imagen</div>
+                )}
+              </div>
+            </div>
+            <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--background)', borderRadius: 'var(--radius)' }}>
+              <p><strong>Cliente:</strong> {selectedClient.name}</p>
+              <p><strong>Teléfono:</strong> {selectedClient.phone}</p>
+              <p><strong>Creado por:</strong> {selectedClient.creator_name} {selectedClient.creator_lastname}</p>
+              <p><strong>Fecha:</strong> {new Date(selectedClient.created_at).toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
