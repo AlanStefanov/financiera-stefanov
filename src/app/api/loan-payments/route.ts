@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
     }
 
-    const payments = all(`
+    const payments = await all(`
       SELECT lp.*, l.total_amount as loan_total, l.principal_amount as loan_principal,
              c.name as client_name, c.phone as client_phone
       FROM loan_payments lp
