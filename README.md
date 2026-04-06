@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Microcreditos Stefanov - Sistema de Gestión
 
-## Getting Started
+Sistema integral de gestión de préstamos y clientes para Microcreditos Stefanov.
 
-First, run the development server:
+## Características
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Gestión de Clientes**: CRUD completo con información de contacto, dirección y fotos DNI
+- **Gestión de Préstamos**: Control de préstamos con estados (orden → aprobado → finalizado)
+- **Seguimiento de Pagos**: Cuotas parciales y completas, con cálculo automático de intereses
+- **Roles de Usuario**: Administrador y Operador con permisos diferenciados
+- **Notificaciones**: Envío automático de notificaciones por WhatsApp al aprobar préstamos
+- **Dashboard**: Estadísticas en tiempo real (total prestado, cobrado, faltante)
+- **Diseño Responsivo**: Interfaz moderna y adaptativa
+
+## Stack Tecnológico
+
+- **Frontend**: Next.js 14 (App Router), React, TypeScript
+- **Backend**: API Routes de Next.js
+- **Base de Datos**: SQLite (better-sqlite3)
+- **Autenticación**: JWT
+- **Estilos**: CSS Variables con diseño personalizado
+
+## Estructura del Proyecto
+
+```
+src/
+├── app/
+│   ├── api/              # Endpoints de la API
+│   │   ├── auth/         # Autenticación
+│   │   ├── clients/      # Gestión de clientes
+│   │   ├── loans/        # Gestión de préstamos
+│   │   ├── loan-types/  # Tipos de préstamo
+│   │   ├── loan-payments/# Pagos de cuotas
+│   │   └── geocode/      # Geocodificación de direcciones
+│   ├── dashboard/        # Panel principal
+│   │   ├── clients/      # Clientes
+│   │   ├── loans/       # Préstamos
+│   │   ├── loan-types/  # Configuración de préstamos
+│   │   ├── users/       # Gestión de usuarios
+│   │   └── page.tsx     # Dashboard principal
+│   ├── globals.css      # Estilos globales
+│   ├── layout.tsx       # Layout principal
+│   └── page.tsx         # Página de login
+└── lib/
+    └── db.ts            # Configuración de SQLite
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Instalación
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Instalar dependencias
+npm install
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Ejecutar en desarrollo
+npm run dev
+```
 
-## Learn More
+## Variables de Entorno
 
-To learn more about Next.js, take a look at the following resources:
+Crea un archivo `.env.local` en la raíz del proyecto:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```env
+JWT_SECRET=tu_secreto_aqui
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Roles de Usuario
 
-## Deploy on Vercel
+| Rol | Permisos |
+|-----|-----------|
+| Admin | Ver todos los préstamos, gestionar usuarios, activar/desactivar clientes |
+| Operator | Crear/editar clientes, gestionar préstamos propios, registrar pagos |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Estados de Préstamo
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Orden**: Préstamo creado, pendiente de aprobación
+- **Aprobado**: Préstamo activo, en proceso de cobro
+- **Finalizado**: Todas las cuotas pagadas
+
+## Licencia
+
+MIT
