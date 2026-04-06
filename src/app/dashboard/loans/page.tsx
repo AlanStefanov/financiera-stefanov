@@ -43,6 +43,7 @@ interface LoanType {
   modality: string;
   duration_months: number;
   interest_percentage: number;
+  is_active?: number;
 }
 
 interface User {
