@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
     }
 
-    const clients = all(`
+    const clients = await all(`
       SELECT c.*, u.name as creator_name, u.lastname as creator_lastname 
       FROM clients c 
       LEFT JOIN users u ON c.created_by = u.id 
@@ -66,12 +66,12 @@ export async function POST(request: NextRequest) {
     const dniFrontPath = saveImage(dni_front || '', 'front');
     const dniBackPath = saveImage(dni_back || '', 'back');
 
-    const result = run(
+    const result = await run(
       'INSERT INTO clients (name, phone, address, dni_front, dni_back, created_by) VALUES (?, ?, ?, ?, ?, ?)',
       [name, phone, address || null, dniFrontPath, dniBackPath, decoded.id]
     );
 
-    const client = get(`
+    const client = await get(`
       SELECT c.*, u.name as creator_name, u.lastname as creator_lastname 
       FROM clients c 
       LEFT JOIN users u ON c.created_by = u.id 

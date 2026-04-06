@@ -26,7 +26,7 @@ export async function GET(
     }
 
     await getDB();
-    const user = get('SELECT id, username, name, lastname, phone, role, created_at FROM users WHERE id = ?', [parseInt(id)]);
+    const user = await get('SELECT id, username, name, lastname, phone, role, created_at FROM users WHERE id = ?', [parseInt(id)]);
     
     if (!user) {
       return NextResponse.json({ message: 'Usuario no encontrado' }, { status: 404 });
@@ -57,7 +57,7 @@ export async function PUT(
     const values: any[] = [];
 
     if (username) {
-      const existing = get('SELECT id FROM users WHERE username = ? AND id != ?', [username, parseInt(id)]);
+      const existing = await get('SELECT id FROM users WHERE username = ? AND id != ?', [username, parseInt(id)]);
       if (existing) {
         return NextResponse.json({ message: 'El nombre de usuario ya existe' }, { status: 400 });
       }
@@ -101,7 +101,7 @@ export async function PUT(
     values.push(parseInt(id));
     run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
 
-    const user = get('SELECT id, username, name, lastname, phone, role, created_at FROM users WHERE id = ?', [parseInt(id)]);
+    const user = await get('SELECT id, username, name, lastname, phone, role, created_at FROM users WHERE id = ?', [parseInt(id)]);
 
     return NextResponse.json({
       message: 'Usuario actualizado exitosamente',
@@ -123,15 +123,15 @@ export async function DELETE(
       return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
     }
 
-    const adminCount = all('SELECT COUNT(*) as count FROM users WHERE role = ?', ['admin']);
-    const userToDelete = get('SELECT role FROM users WHERE id = ?', [parseInt(id)]);
+    const adminCount = await all('SELECT COUNT(*) as count FROM users WHERE role = ?', ['admin']);
+    const userToDelete = await get('SELECT role FROM users WHERE id = ?', [parseInt(id)]);
     
-    if (userToDelete?.role === 'admin' && adminCount[0]?.count <= 1) {
+    if (userToDelete && userToDelete.role === 'admin' && adminCount[0] && Number(adminCount[0].count) <= 1) {
       return NextResponse.json({ message: 'No puedes eliminar el último administrador' }, { status: 400 });
     }
 
     await getDB();
-    run('DELETE FROM users WHERE id = ?', [parseInt(id)]);
+    await run('DELETE FROM users WHERE id = ?', [parseInt(id)]);
 
     return NextResponse.json({ message: 'Usuario eliminado exitosamente' });
   } catch (error) {

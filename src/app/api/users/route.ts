@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
     }
 
-    const users = all('SELECT id, username, name, lastname, phone, role, created_at FROM users ORDER BY created_at DESC');
+    const users = await all('SELECT id, username, name, lastname, phone, role, created_at FROM users ORDER BY created_at DESC');
     return NextResponse.json(users);
   } catch (error) {
     return NextResponse.json({ error: 'Error fetching users' }, { status: 500 });
@@ -48,18 +48,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Rol inválido' }, { status: 400 });
     }
 
-    const existingUser = get('SELECT id FROM users WHERE username = ?', [username]);
+    const existingUser = await get('SELECT id FROM users WHERE username = ?', [username]);
     if (existingUser) {
       return NextResponse.json({ message: 'El nombre de usuario ya existe' }, { status: 400 });
     }
 
     const hashedPassword = bcrypt.hashSync(password, 10);
-    const result = run(
+    const result = await run(
       'INSERT INTO users (username, name, lastname, phone, password, role) VALUES (?, ?, ?, ?, ?, ?)',
       [username, name, lastname, phone, hashedPassword, role]
     );
 
-    const user = get('SELECT id, username, name, lastname, phone, role, created_at FROM users WHERE id = ?', [result.lastID]);
+    const user = await get('SELECT id, username, name, lastname, phone, role, created_at FROM users WHERE id = ?', [result.lastID]);
 
     return NextResponse.json({
       message: 'Usuario creado exitosamente',

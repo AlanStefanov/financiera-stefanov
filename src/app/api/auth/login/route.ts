@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Username y password son requeridos' }, { status: 400 });
     }
 
-    const user = get('SELECT * FROM users WHERE username = ?', [username]);
+    const user = await get('SELECT * FROM users WHERE username = ?', [username]);
     
     if (!user) {
       return NextResponse.json({ message: 'Credenciales inválidas' }, { status: 401 });

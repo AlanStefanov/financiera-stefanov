@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     
     query += ` ORDER BY l.created_at DESC`;
     
-    const loans = all(query);
+    const loans = await all(query);
     return NextResponse.json(loans);
   } catch (error) {
     return NextResponse.json({ error: 'Error fetching loans' }, { status: 500 });
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Faltan campos requeridos' }, { status: 400 });
     }
 
-    const loanType = get('SELECT * FROM loan_types WHERE id = ? AND is_active = 1', [loan_type_id]);
+    const loanType = await get('SELECT * FROM loan_types WHERE id = ? AND is_active = 1', [loan_type_id]);
     if (!loanType) {
       return NextResponse.json({ message: 'Tipo de préstamo no encontrado o inactivo' }, { status: 404 });
     }
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     const end = new Date(start_date + 'T12:00:00');
     end.setMonth(end.getMonth() + (loanType.duration_months as number));
 
-    const result = run(
+    const result = await run(
       `INSERT INTO loans (client_id, operator_id, loan_type_id, principal_amount, total_amount, start_date, end_date, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, 'orden')`,
       [client_id, decoded.id, loan_type_id, principal_amount, totalAmount, start.toISOString(), end.toISOString()]
@@ -87,14 +87,14 @@ export async function POST(request: NextRequest) {
     let currentDate = getNextBusinessDay(start);
 
     for (let i = 0; i < numPayments; i++) {
-      run(
+      await run(
         'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
         [result.lastID, i + 1, paymentAmount, currentDate.toISOString()]
       );
       currentDate = getNextBusinessDay(currentDate);
     }
 
-    const loan = get('SELECT * FROM loans WHERE id = ?', [result.lastID]);
+    const loan = await get('SELECT * FROM loans WHERE id = ?', [result.lastID]);
 
     return NextResponse.json({
       message: 'Orden de préstamo creada exitosamente',

@@ -43,20 +43,20 @@ export async function POST(request: NextRequest) {
 
     const paidDate = is_paid ? new Date().toISOString() : null;
 
-    const result = run(
+    const result = await run(
       `INSERT INTO payments (loan_id, amount, payment_date, is_paid, paid_date)
        VALUES (?, ?, ?, ?, ?)`,
       [loan_id, amount, payment_date, is_paid ? 1 : 0, paidDate]
     );
 
-    const payment = get('SELECT * FROM payments WHERE id = ?', [result.lastID]);
+    const payment = await get('SELECT * FROM payments WHERE id = ?', [result.lastID]);
 
     if (is_paid) {
-      const loanPayments = all('SELECT SUM(amount) as total FROM payments WHERE loan_id = ? AND is_paid = 1', [loan_id]);
-      const loan = get('SELECT total_amount FROM loans WHERE id = ?', [loan_id]);
+      const loanPayments = await all('SELECT SUM(amount) as total FROM payments WHERE loan_id = ? AND is_paid = 1', [loan_id]);
+      const loan = await get('SELECT total_amount FROM loans WHERE id = ?', [loan_id]);
       
-      if (loanPayments[0]?.total && loan?.total_amount && loanPayments[0].total >= loan.total_amount) {
-        run('UPDATE loans SET status = ? WHERE id = ?', ['completed', loan_id]);
+      if (loanPayments[0]?.total && loan?.total_amount && Number(loanPayments[0].total) >= Number(loan.total_amount)) {
+        await run('UPDATE loans SET status = ? WHERE id = ?', ['completed', loan_id]);
       }
     }
 
