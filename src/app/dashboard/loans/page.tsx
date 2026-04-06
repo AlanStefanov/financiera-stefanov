@@ -281,6 +281,39 @@ export default function LoansPage() {
                   required
                 />
               </div>
+              {formData.loan_type_id && formData.principal_amount && (
+                (() => {
+                  const selectedType = loanTypes.find(t => t.id === parseInt(formData.loan_type_id));
+                  if (!selectedType) return null;
+                  const principal = parseFloat(formData.principal_amount) || 0;
+                  const total = principal * (1 + (selectedType.interest_percentage || 0) / 100);
+                  const numPayments = selectedType.modality === 'daily' ? 20 : 4;
+                  const installmentAmount = total / numPayments;
+                  return (
+                    <div style={{ 
+                      marginTop: '1rem', 
+                      padding: '1rem', 
+                      background: 'var(--background)', 
+                      borderRadius: 'var(--radius)',
+                      border: '1px solid var(--primary)'
+                    }}>
+                      <h4 style={{ margin: '0 0 0.5rem', color: 'var(--primary)' }}>Resumen del Préstamo</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.9rem' }}>
+                        <div>Monto solicitado:</div>
+                        <div style={{ fontWeight: 'bold' }}>${principal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                        <div>Interés ({selectedType.interest_percentage}%):</div>
+                        <div>${(total - principal).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                        <div>Total a pagar:</div>
+                        <div style={{ fontWeight: 'bold', color: 'var(--danger)' }}>${total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                        <div> Número de cuotas:</div>
+                        <div>{numPayments} {selectedType.modality === 'daily' ? '(diarias)' : '(semanales)'}</div>
+                        <div>Valor de cada cuota:</div>
+                        <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>${installmentAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                      </div>
+                    </div>
+                  );
+                })()
+              )}
               <div>
                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Fecha de Inicio</label>
                 <input
