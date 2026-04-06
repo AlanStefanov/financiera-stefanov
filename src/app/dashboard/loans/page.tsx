@@ -208,7 +208,9 @@ export default function LoansPage() {
         const phone = loan.client_phone.replace(/\D/g, '');
         const installments = loan.modality === 'daily' ? 20 : 4;
         const installmentAmount = Math.round(loan.total_amount / installments);
-        const message = `¡Hola ${loan.client_name}! Tu préstamo ha sido aprobado.\n\nMonto: $${loan.principal_amount.toLocaleString()}\nTotal: $${loan.total_amount.toLocaleString()}\nCuotas: ${installments} de $${installmentAmount.toLocaleString()}\n\nGracias por confiar en Microcreditos Stefanov.`;
+        const modalityText = loan.modality === 'daily' ? 'Pago Diario' : 'Pago Semanal';
+        const endDate = loan.end_date ? new Date(loan.end_date).toLocaleDateString('es-AR') : 'N/A';
+        const message = `¡Hola ${loan.client_name}! Tu préstamo ha sido aprobado.\n\nMonto: $${loan.principal_amount.toLocaleString()}\nTotal: $${loan.total_amount.toLocaleString()}\nTipo: ${modalityText}\nCuotas: ${installments} de $${installmentAmount.toLocaleString()}\nFecha de fin: ${endDate}\n\nGracias por confiar en Microcreditos Stefanov.`;
         window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
       }
     } catch (error) {
@@ -363,6 +365,7 @@ export default function LoansPage() {
               <th>Cuota</th>
               <th>Tipo</th>
               <th>Inicio</th>
+              <th>Fin</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
@@ -389,6 +392,7 @@ export default function LoansPage() {
                     </td>
                     <td>{loan.loan_type_name}</td>
                     <td>{new Date(loan.start_date).toLocaleDateString()}</td>
+                    <td>{loan.end_date ? new Date(loan.end_date).toLocaleDateString() : '-'}</td>
                     <td>
                       <span style={{
                         padding: '0.25rem 0.5rem',
