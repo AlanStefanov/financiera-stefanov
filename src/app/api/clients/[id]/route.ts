@@ -8,7 +8,7 @@ export async function GET(
   try {
     const { id } = await params;
     await getDB();
-    const client = get('SELECT * FROM clients WHERE id = ?', [parseInt(id)]);
+    const client = await get('SELECT * FROM clients WHERE id = ?', [parseInt(id)]);
     
     if (!client) {
       return NextResponse.json({ message: 'Cliente no encontrado' }, { status: 404 });
@@ -62,9 +62,9 @@ export async function PUT(
     values.push(now.toISOString());
     values.push(parseInt(id));
 
-    run(`UPDATE clients SET ${updates.join(', ')} WHERE id = ?`, values);
+    await run(`UPDATE clients SET ${updates.join(', ')} WHERE id = ?`, values);
 
-    const client = get('SELECT * FROM clients WHERE id = ?', [parseInt(id)]);
+    const client = await get('SELECT * FROM clients WHERE id = ?', [parseInt(id)]);
     
     if (!client) {
       return NextResponse.json({ message: 'Cliente no encontrado' }, { status: 404 });
@@ -86,7 +86,7 @@ export async function DELETE(
   try {
     const { id } = await params;
     await getDB();
-    const result = run('DELETE FROM clients WHERE id = ?', [parseInt(id)]);
+    const result = await run('DELETE FROM clients WHERE id = ?', [parseInt(id)]);
     
     if (result.changes === 0) {
       return NextResponse.json({ message: 'Cliente no encontrado' }, { status: 404 });

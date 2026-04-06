@@ -25,7 +25,7 @@ export async function GET(
 
     await getDB();
     
-    const loan = get(`
+    const loan = await get(`
       SELECT l.*, c.name as client_name, c.phone as client_phone, u.username as operator_name,
              lt.name as loan_type_name, lt.modality, lt.duration_months, lt.interest_percentage
       FROM loans l
@@ -39,7 +39,7 @@ export async function GET(
       return NextResponse.json({ message: 'Préstamo no encontrado' }, { status: 404 });
     }
 
-    const payments = all('SELECT * FROM loan_payments WHERE loan_id = ? ORDER BY payment_number', [parseInt(id)]);
+    const payments = await all('SELECT * FROM loan_payments WHERE loan_id = ? ORDER BY payment_number', [parseInt(id)]);
 
     return NextResponse.json({ loan, payments });
   } catch (error) {
@@ -64,7 +64,7 @@ export async function PUT(
     const body = await request.json();
     const { status } = body;
 
-    const loan = get('SELECT * FROM loans WHERE id = ?', [parseInt(id)]);
+    const loan = await get('SELECT * FROM loans WHERE id = ?', [parseInt(id)]);
     if (!loan) {
       return NextResponse.json({ message: 'Préstamo no encontrado' }, { status: 404 });
     }
@@ -78,14 +78,14 @@ export async function PUT(
         return NextResponse.json({ message: 'No autorizado para cambiar a orden' }, { status: 403 });
       }
 
-      const currentLoan = get('SELECT * FROM loans WHERE id = ?', [parseInt(id)]);
+      const currentLoan = await get('SELECT * FROM loans WHERE id = ?', [parseInt(id)]);
       
       run('UPDATE loans SET status = ?, updated_at = ? WHERE id = ?', [status, new Date().toISOString(), parseInt(id)]);
 
-      const existingPayments = all('SELECT COUNT(*) as count FROM loan_payments WHERE loan_id = ?', [parseInt(id)]);
+      const existingPayments = await all('SELECT COUNT(*) as count FROM loan_payments WHERE loan_id = ?', [parseInt(id)]);
       
       if (status === 'aprobado' && existingPayments[0]?.count === 0) {
-        const loanType = get('SELECT * FROM loan_types WHERE id = ?', [currentLoan?.loan_type_id]);
+        const loanType = await get('SELECT * FROM loan_types WHERE id = ?', [currentLoan?.loan_type_id]);
         if (loanType) {
           const numPayments = loanType.modality === 'daily' ? 20 : 4;
           const paymentAmount = (currentLoan?.total_amount as number) / numPayments;
@@ -112,8 +112,8 @@ export async function PUT(
       }
     }
 
-    const updatedLoan = get('SELECT * FROM loans WHERE id = ?', [parseInt(id)]);
-    const payments = all('SELECT * FROM loan_payments WHERE loan_id = ? ORDER BY payment_number', [parseInt(id)]);
+    const updatedLoan = await get('SELECT * FROM loans WHERE id = ?', [parseInt(id)]);
+    const payments = await all('SELECT * FROM loan_payments WHERE loan_id = ? ORDER BY payment_number', [parseInt(id)]);
 
     return NextResponse.json({
       message: 'Préstamo actualizado exitosamente',

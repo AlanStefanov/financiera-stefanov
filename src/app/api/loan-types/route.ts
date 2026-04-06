@@ -19,7 +19,7 @@ const verifyAdmin = (token: string) => {
 export async function GET(request: NextRequest) {
   try {
     await getDB();
-    const loanTypes = all('SELECT * FROM loan_types ORDER BY duration_months, modality');
+    const loanTypes = await all('SELECT * FROM loan_types ORDER BY duration_months, modality');
     return NextResponse.json(loanTypes);
   } catch (error) {
     return NextResponse.json({ error: 'Error fetching loan types' }, { status: 500 });
@@ -41,12 +41,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Faltan campos requeridos' }, { status: 400 });
     }
 
-    const result = run(
+    const result = await run(
       'INSERT INTO loan_types (name, duration_months, modality, interest_percentage) VALUES (?, ?, ?, ?)',
       [name, duration_months, modality, interest_percentage]
     );
 
-    const loanType = get('SELECT * FROM loan_types WHERE id = ?', [result.lastID]);
+    const loanType = await get('SELECT * FROM loan_types WHERE id = ?', [result.lastID]);
 
     return NextResponse.json({
       message: 'Tipo de préstamo creado exitosamente',

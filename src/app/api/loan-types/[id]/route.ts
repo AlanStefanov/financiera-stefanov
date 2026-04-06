@@ -20,7 +20,7 @@ export async function GET(
   try {
     const { id } = await params;
     await getDB();
-    const loanType = get('SELECT * FROM loan_types WHERE id = ?', [parseInt(id)]);
+    const loanType = await get('SELECT * FROM loan_types WHERE id = ?', [parseInt(id)]);
     
     if (!loanType) {
       return NextResponse.json({ message: 'Tipo de préstamo no encontrado' }, { status: 404 });
@@ -63,7 +63,7 @@ export async function PUT(
     values.push(parseInt(id));
     run(`UPDATE loan_types SET ${updates.join(', ')} WHERE id = ?`, values);
 
-    const loanType = get('SELECT * FROM loan_types WHERE id = ?', [parseInt(id)]);
+    const loanType = await get('SELECT * FROM loan_types WHERE id = ?', [parseInt(id)]);
     
     if (!loanType) {
       return NextResponse.json({ message: 'Tipo de préstamo no encontrado' }, { status: 404 });

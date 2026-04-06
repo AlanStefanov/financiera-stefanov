@@ -16,7 +16,7 @@ export async function PUT(
     const body = await request.json();
     const { is_paid, partial_amount } = body;
 
-    const payment = get('SELECT * FROM loan_payments WHERE id = ?', [parseInt(id)]);
+    const payment = await get('SELECT * FROM loan_payments WHERE id = ?', [parseInt(id)]);
     if (!payment) {
       return NextResponse.json({ message: 'Pago no encontrado' }, { status: 404 });
     }
@@ -42,16 +42,17 @@ export async function PUT(
     }
 
     const loanId = payment.loan_id;
-    const allPayments = all('SELECT COUNT(*) as total, SUM(CASE WHEN is_paid = 1 THEN 1 ELSE 0 END) as paid FROM loan_payments WHERE loan_id = ?', [loanId]);
+    const allPayments = await all('SELECT COUNT(*) as total, SUM(CASE WHEN is_paid = 1 THEN 1 ELSE 0 END) as paid FROM loan_payments WHERE loan_id = ?', [loanId]);
+    const firstPayment = allPayments[0];
 
-    if (allPayments[0]?.total === allPayments[0]?.paid && allPayments[0]?.total > 0) {
-      run('UPDATE loans SET status = ?, updated_at = ? WHERE id = ?', ['finalizado', new Date().toISOString(), loanId]);
-    } else if (allPayments[0]?.paid > 0) {
-      run('UPDATE loans SET status = ?, updated_at = ? WHERE id = ?', ['aprobado', new Date().toISOString(), loanId]);
+    if (firstPayment && Number(firstPayment.total) === Number(firstPayment.paid) && Number(firstPayment.total) > 0) {
+      await run('UPDATE loans SET status = ?, updated_at = ? WHERE id = ?', ['finalizado', new Date().toISOString(), loanId]);
+    } else if (firstPayment && Number(firstPayment.paid) > 0) {
+      await run('UPDATE loans SET status = ?, updated_at = ? WHERE id = ?', ['aprobado', new Date().toISOString(), loanId]);
     }
 
-    const updatedPayment = get('SELECT * FROM loan_payments WHERE id = ?', [parseInt(id)]);
-    const payments = all('SELECT * FROM loan_payments WHERE loan_id = ? ORDER BY payment_number', [loanId]);
+    const updatedPayment = await get('SELECT * FROM loan_payments WHERE id = ?', [parseInt(id)]);
+    const payments = await all('SELECT * FROM loan_payments WHERE loan_id = ? ORDER BY payment_number', [loanId]);
 
     return NextResponse.json({
       message: 'Pago actualizado exitosamente',
