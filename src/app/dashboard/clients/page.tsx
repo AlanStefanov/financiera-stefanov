@@ -222,7 +222,6 @@ export default function ClientsPage() {
                   ref={frontInputRef}
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   onChange={(e) => handleFileChange(e, 'dni_front')}
                   style={{ padding: '0.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', width: '100%' }}
                 />
@@ -238,7 +237,6 @@ export default function ClientsPage() {
                   ref={backInputRef}
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   onChange={(e) => handleFileChange(e, 'dni_back')}
                   style={{ padding: '0.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', width: '100%' }}
                 />
