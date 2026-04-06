@@ -216,6 +216,26 @@ export default function LoansPage() {
     }
   };
 
+  const handleDeleteLoan = async (loanId: number) => {
+    if (!confirm('¿Estás seguro de eliminar este préstamo? Esta acción no se puede deshacer.')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/loans/${loanId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        fetchData();
+        if (selectedLoan?.id === loanId) {
+          setSelectedLoan(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting loan:', error);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'orden': return { bg: '#fef3c7', color: '#d97706' };
@@ -387,14 +407,25 @@ export default function LoansPage() {
                       >
                         Ver Cuotas
                       </button>
-                      {user.role === 'admin' && loan.status !== 'finalizado' && (
-                        <button
-                          onClick={() => handleUpdateStatus(loan.id, loan.status === 'orden' ? 'aprobado' : 'finalizado')}
-                          className="btn btn-primary"
-                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
-                        >
-                          {loan.status === 'orden' ? 'Aprobar' : 'Finalizar'}
-                        </button>
+                      {user.role === 'admin' && (
+                        <>
+                          {loan.status !== 'finalizado' && (
+                            <button
+                              onClick={() => handleUpdateStatus(loan.id, loan.status === 'orden' ? 'aprobado' : 'finalizado')}
+                              className="btn btn-primary"
+                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem', marginRight: '0.5rem' }}
+                            >
+                              {loan.status === 'orden' ? 'Aprobar' : 'Finalizar'}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteLoan(loan.id)}
+                            className="btn btn-danger"
+                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
+                          >
+                            Eliminar
+                          </button>
+                        </>
                       )}
                     </td>
                   </tr>
