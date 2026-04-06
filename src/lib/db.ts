@@ -1,7 +1,11 @@
 import { createClient } from '@libsql/client';
 
-const TURSO_URL = process.env.TURSO_URL || 'libsql://stefanovmicrocredits-alanstefanov.aws-us-east-2.turso.io';
-const TURSO_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN || '';
+const TURSO_URL = process.env.TURSO_URL;
+const TURSO_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN;
+
+if (!TURSO_URL || !TURSO_AUTH_TOKEN) {
+  throw new Error('TURSO_URL and TURSO_AUTH_TOKEN environment variables are required');
+}
 
 const client = createClient({
   url: TURSO_URL,
