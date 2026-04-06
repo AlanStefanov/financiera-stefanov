@@ -1,45 +1,57 @@
-import { createClient } from '@libsql/client';
+import { createClient, Client } from '@libsql/client';
 
-const TURSO_URL = process.env.TURSO_URL;
-const TURSO_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN;
+let client: Client | null = null;
+let dbInitialized = false;
 
-if (!TURSO_URL || !TURSO_AUTH_TOKEN) {
-  throw new Error('TURSO_URL and TURSO_AUTH_TOKEN environment variables are required');
+function getClient(): Client {
+  if (!client) {
+    const TURSO_URL = process.env.TURSO_URL;
+    const TURSO_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN;
+    
+    if (!TURSO_URL || !TURSO_AUTH_TOKEN) {
+      throw new Error('TURSO_URL and TURSO_AUTH_TOKEN environment variables are required');
+    }
+    
+    client = createClient({
+      url: TURSO_URL,
+      authToken: TURSO_AUTH_TOKEN,
+    });
+  }
+  return client;
 }
 
-const client = createClient({
-  url: TURSO_URL,
-  authToken: TURSO_AUTH_TOKEN,
-});
-
-initializeDatabase().catch(console.error);
+async function initDB() {
+  if (dbInitialized) return;
+  dbInitialized = true;
+  await initializeDatabase();
+}
 
 export const getDB = async () => {
-  await initializeDatabase();
-  return client;
+  await initDB();
+  return getClient();
 };
 
 export const run = async (sql: string, params: any[] = []) => {
-  const result = await client.execute({ sql, args: params });
+  const result = await getClient().execute({ sql, args: params });
   return { lastID: result.lastInsertRowid, changes: result.rowsAffected };
 };
 
 export const get = async (sql: string, params: any[] = []) => {
-  const result = await client.execute({ sql, args: params });
+  const result = await getClient().execute({ sql, args: params });
   return result.rows[0] || undefined;
 };
 
 export const all = async (sql: string, params: any[] = []) => {
-  const result = await client.execute({ sql, args: params });
+  const result = await getClient().execute({ sql, args: params });
   return result.rows;
 };
 
 export const exec = async (sql: string) => {
-  await client.execute({ sql });
+  await getClient().execute({ sql });
 };
 
 export const initializeDatabase = async () => {
-  await client.execute(`
+  await getClient().execute(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
@@ -52,7 +64,7 @@ export const initializeDatabase = async () => {
     )
   `);
 
-  await client.execute(`
+  await getClient().execute(`
     CREATE TABLE IF NOT EXISTS clients (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -68,7 +80,7 @@ export const initializeDatabase = async () => {
     )
   `);
 
-  await client.execute(`
+  await getClient().execute(`
     CREATE TABLE IF NOT EXISTS loan_types (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -80,7 +92,7 @@ export const initializeDatabase = async () => {
     )
   `);
 
-  await client.execute(`
+  await getClient().execute(`
     CREATE TABLE IF NOT EXISTS loans (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       client_id INTEGER NOT NULL,
@@ -99,7 +111,7 @@ export const initializeDatabase = async () => {
     )
   `);
 
-  await client.execute(`
+  await getClient().execute(`
     CREATE TABLE IF NOT EXISTS loan_payments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       loan_id INTEGER NOT NULL,
@@ -114,24 +126,24 @@ export const initializeDatabase = async () => {
     )
   `);
 
-  await client.execute(`CREATE INDEX IF NOT EXISTS idx_loans_client_id ON loans(client_id)`);
-  await client.execute(`CREATE INDEX IF NOT EXISTS idx_loans_operator_id ON loans(operator_id)`);
-  await client.execute(`CREATE INDEX IF NOT EXISTS idx_loans_status ON loans(status)`);
-  await client.execute(`CREATE INDEX IF NOT EXISTS idx_loan_payments_loan_id ON loan_payments(loan_id)`);
+  await getClient().execute(`CREATE INDEX IF NOT EXISTS idx_loans_client_id ON loans(client_id)`);
+  await getClient().execute(`CREATE INDEX IF NOT EXISTS idx_loans_operator_id ON loans(operator_id)`);
+  await getClient().execute(`CREATE INDEX IF NOT EXISTS idx_loans_status ON loans(status)`);
+  await getClient().execute(`CREATE INDEX IF NOT EXISTS idx_loan_payments_loan_id ON loan_payments(loan_id)`);
 
-  const loanTypesResult = await client.execute('SELECT COUNT(*) as count FROM loan_types');
+  const loanTypesResult = await getClient().execute('SELECT COUNT(*) as count FROM loan_types');
   if (loanTypesResult.rows[0]?.count === 0) {
-    await client.execute(`INSERT INTO loan_types (name, duration_months, modality, interest_percentage) VALUES ('Préstamo 1 Mes - Diario', 1, 'daily', 30)`);
-    await client.execute(`INSERT INTO loan_types (name, duration_months, modality, interest_percentage) VALUES ('Préstamo 1 Mes - Semanal', 1, 'weekly', 30)`);
-    await client.execute(`INSERT INTO loan_types (name, duration_months, modality, interest_percentage) VALUES ('Préstamo 2 Meses - Diario', 2, 'daily', 50)`);
-    await client.execute(`INSERT INTO loan_types (name, duration_months, modality, interest_percentage) VALUES ('Préstamo 2 Meses - Semanal', 2, 'weekly', 50)`);
+    await getClient().execute(`INSERT INTO loan_types (name, duration_months, modality, interest_percentage) VALUES ('Préstamo 1 Mes - Diario', 1, 'daily', 30)`);
+    await getClient().execute(`INSERT INTO loan_types (name, duration_months, modality, interest_percentage) VALUES ('Préstamo 1 Mes - Semanal', 1, 'weekly', 30)`);
+    await getClient().execute(`INSERT INTO loan_types (name, duration_months, modality, interest_percentage) VALUES ('Préstamo 2 Meses - Diario', 2, 'daily', 50)`);
+    await getClient().execute(`INSERT INTO loan_types (name, duration_months, modality, interest_percentage) VALUES ('Préstamo 2 Meses - Semanal', 2, 'weekly', 50)`);
   }
 
-  const adminResult = await client.execute("SELECT COUNT(*) as count FROM users WHERE username = 'admin'");
+  const adminResult = await getClient().execute("SELECT COUNT(*) as count FROM users WHERE username = 'admin'");
   if (adminResult.rows[0]?.count === 0) {
     const bcrypt = require('bcryptjs');
     const hashedPassword = bcrypt.hashSync('Dr@wssap1234k', 10);
-    await client.execute('INSERT INTO users (username, name, lastname, phone, password, role) VALUES (?, ?, ?, ?, ?, ?)', ['admin', 'Admin', 'Sistema', '1122334455', hashedPassword, 'admin']);
+    await getClient().execute('INSERT INTO users (username, name, lastname, phone, password, role) VALUES (?, ?, ?, ?, ?, ?)', ['admin', 'Admin', 'Sistema', '1122334455', hashedPassword, 'admin']);
   }
 
   console.log('Base de datos Turso inicializada correctamente');
