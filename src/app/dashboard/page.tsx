@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 interface Stats {
   totalClients: number;
   activeLoans: number;
-  totalPayments: number;
+  remainingPayments: number;
   totalLoaned: number;
   totalCollected: number;
   remainingToCollect: number;
@@ -16,7 +16,7 @@ interface User {
 }
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<Stats>({ totalClients: 0, activeLoans: 0, totalPayments: 0, totalLoaned: 0, totalCollected: 0, remainingToCollect: 0 });
+  const [stats, setStats] = useState<Stats>({ totalClients: 0, activeLoans: 0, remainingPayments: 0, totalLoaned: 0, totalCollected: 0, remainingToCollect: 0 });
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User>({ role: 'operator' });
 
