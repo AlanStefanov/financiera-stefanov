@@ -12,7 +12,12 @@ const client = createClient({
   authToken: TURSO_AUTH_TOKEN,
 });
 
-export const getDB = async () => client;
+initializeDatabase().catch(console.error);
+
+export const getDB = async () => {
+  await initializeDatabase();
+  return client;
+};
 
 export const run = async (sql: string, params: any[] = []) => {
   const result = await client.execute({ sql, args: params });
