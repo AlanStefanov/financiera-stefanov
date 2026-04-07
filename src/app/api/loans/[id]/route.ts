@@ -62,11 +62,60 @@ export async function PUT(
 
     await getDB();
     const body = await request.json();
-    const { status } = body;
+    const { status, regenerate_payments } = body;
 
     const loan = await get('SELECT * FROM loans WHERE id = ?', [parseInt(id)]);
     if (!loan) {
       return NextResponse.json({ message: 'Préstamo no encontrado' }, { status: 404 });
+    }
+
+    if (regenerate_payments && user.role === 'admin') {
+      await run('DELETE FROM loan_payments WHERE loan_id = ?', [parseInt(id)]);
+      
+      const loanType = await get('SELECT * FROM loan_types WHERE id = ?', [loan.loan_type_id]);
+      if (loanType) {
+        const numPayments = loanType.modality === 'daily' ? 20 : 4;
+        const paymentAmount = (loan.total_amount as number) / numPayments;
+        
+        let currentDate = new Date(loan.start_date as string);
+        
+        if (loanType.modality === 'weekly') {
+          while (currentDate.getDay() !== 5) {
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+        } else {
+          currentDate.setDate(currentDate.getDate() + 1);
+          while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+        }
+
+        for (let i = 0; i < numPayments; i++) {
+          run(
+            'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
+            [parseInt(id), i + 1, paymentAmount, currentDate.toISOString()]
+          );
+          currentDate.setDate(currentDate.getDate() + 1);
+          if (loanType.modality === 'weekly') {
+            while (currentDate.getDay() !== 5) {
+              currentDate.setDate(currentDate.getDate() + 1);
+            }
+          } else {
+            while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+              currentDate.setDate(currentDate.getDate() + 1);
+            }
+          }
+        }
+      }
+      
+      const updatedLoan = await get('SELECT * FROM loans WHERE id = ?', [parseInt(id)]);
+      const payments = await all('SELECT * FROM loan_payments WHERE loan_id = ? ORDER BY payment_number', [parseInt(id)]);
+      
+      return NextResponse.json({
+        message: 'Cuotas regeneradas exitosamente',
+        loan: updatedLoan,
+        payments
+      });
     }
 
     if (status) {
