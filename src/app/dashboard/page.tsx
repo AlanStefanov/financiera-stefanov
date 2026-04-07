@@ -76,7 +76,7 @@ export default function DashboardPage() {
           remainingPayments += remaining;
         }
 
-        const activeLoans = activeAndApprovedLoans.filter((l: any) => l.status === 'active').length;
+        const activeLoans = activeAndApprovedLoans.length;
         const pendingLoans = Array.isArray(loans) ? loans.filter((l: any) => l.status === 'orden').length : 0;
 
         setStats({
