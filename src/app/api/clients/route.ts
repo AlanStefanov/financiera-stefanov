@@ -63,12 +63,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Nombre y teléfono son requeridos' }, { status: 400 });
     }
 
-    const dniFrontPath = saveImage(dni_front || '', 'front');
-    const dniBackPath = saveImage(dni_back || '', 'back');
-
     const result = await run(
       'INSERT INTO clients (name, phone, address, dni_front, dni_back, created_by) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, phone, address || null, dniFrontPath, dniBackPath, decoded.id]
+      [name, phone, address || null, dni_front || null, dni_back || null, decoded.id]
     );
 
     const client = await get(`
