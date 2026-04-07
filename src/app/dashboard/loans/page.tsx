@@ -238,6 +238,33 @@ export default function LoansPage() {
     }
   };
 
+  const handleRegeneratePayments = async (loanId: number) => {
+    if (!confirm('¿Regenerar cuotas? Esto eliminará las cuotas actuales y creará nuevas con las fechas correctas según el tipo de préstamo.')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/loans/${loanId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ regenerate_payments: true }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLoanPayments(data.payments);
+        fetchData();
+        if (selectedLoan?.id === loanId) {
+          handleViewPayments({ ...selectedLoan, id: loanId } as Loan);
+        }
+        alert('Cuotas regeneradas correctamente');
+      }
+    } catch (error) {
+      console.error('Error regenerating payments:', error);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'orden': return { bg: '#fef3c7', color: '#d97706' };
@@ -422,6 +449,14 @@ export default function LoansPage() {
                               {loan.status === 'orden' ? 'Aprobar' : 'Finalizar'}
                             </button>
                           )}
+                          <button
+                            onClick={() => handleRegeneratePayments(loan.id)}
+                            className="btn btn-secondary"
+                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem', marginRight: '0.5rem' }}
+                            title="Regenerar cuotas"
+                          >
+                            ↻
+                          </button>
                           <button
                             onClick={() => handleDeleteLoan(loan.id)}
                             className="btn btn-danger"

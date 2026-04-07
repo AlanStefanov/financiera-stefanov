@@ -58,7 +58,54 @@ export async function POST(request: NextRequest) {
     const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
 
     const body = await request.json();
-    const { client_id, loan_type_id, principal_amount, start_date } = body;
+    const { client_id, loan_type_id, principal_amount, start_date, regenerate_payments } = body;
+
+    if (regenerate_payments && client_id) {
+      const existingLoan = await get('SELECT l.*, lt.modality FROM loans l JOIN loan_types lt ON l.loan_type_id = lt.id WHERE l.client_id = ? AND l.status = ? ORDER BY l.id DESC LIMIT 1', [client_id, 'orden']);
+      if (!existingLoan) {
+        return NextResponse.json({ message: 'No hay préstamo en estado orden para este cliente' }, { status: 404 });
+      }
+
+      const loanType = await get('SELECT * FROM loan_types WHERE id = ?', [existingLoan.loan_type_id]);
+      if (!loanType) {
+        return NextResponse.json({ message: 'Tipo de préstamo no encontrado' }, { status: 404 });
+      }
+
+      await run('DELETE FROM loan_payments WHERE loan_id = ?', [existingLoan.id]);
+
+      const numPayments = loanType.modality === 'daily' ? 20 : 4;
+      const paymentAmount = (existingLoan.total_amount as number) / numPayments;
+
+      let currentDate = new Date(existingLoan.start_date as string);
+      if (loanType.modality === 'weekly') {
+        while (currentDate.getDay() !== 5) {
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      } else {
+        currentDate = getNextBusinessDay(new Date(existingLoan.start_date as string));
+      }
+
+      for (let i = 0; i < numPayments; i++) {
+        await run(
+          'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
+          [existingLoan.id, i + 1, paymentAmount, currentDate.toISOString()]
+        );
+        currentDate.setDate(currentDate.getDate() + 1);
+        if (loanType.modality === 'weekly') {
+          while (currentDate.getDay() !== 5) {
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+        } else {
+          currentDate = getNextBusinessDay(currentDate);
+        }
+      }
+
+      const loan = await get('SELECT * FROM loans WHERE id = ?', [existingLoan.id]);
+      return NextResponse.json({
+        message: 'Cuotas regeneradas exitosamente',
+        loan
+      });
+    }
 
     if (!client_id || !loan_type_id || !principal_amount || !start_date) {
       return NextResponse.json({ message: 'Faltan campos requeridos' }, { status: 400 });
