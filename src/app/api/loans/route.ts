@@ -84,14 +84,28 @@ export async function POST(request: NextRequest) {
     const numPayments = loanType.modality === 'daily' ? 20 : 4;
     const paymentAmount = totalAmount / numPayments;
 
-    let currentDate = getNextBusinessDay(start);
+    let currentDate = new Date(start);
+    if (loanType.modality === 'weekly') {
+      while (currentDate.getDay() !== 5) {
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    } else {
+      currentDate = getNextBusinessDay(start);
+    }
 
     for (let i = 0; i < numPayments; i++) {
       await run(
         'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
         [result.lastID, i + 1, paymentAmount, currentDate.toISOString()]
       );
-      currentDate = getNextBusinessDay(currentDate);
+      currentDate.setDate(currentDate.getDate() + 1);
+      if (loanType.modality === 'weekly') {
+        while (currentDate.getDay() !== 5) {
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      } else {
+        currentDate = getNextBusinessDay(currentDate);
+      }
     }
 
     const loan = await get('SELECT * FROM loans WHERE id = ?', [result.lastID]);

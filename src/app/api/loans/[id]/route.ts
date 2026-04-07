@@ -91,11 +91,17 @@ export async function PUT(
           const paymentAmount = (currentLoan?.total_amount as number) / numPayments;
           
           let startDateStr = (currentLoan?.start_date as string).split('T')[0];
-          let startDate = new Date(startDateStr + 'T12:00:00');
-          let currentDate = new Date(startDate);
-          currentDate.setDate(currentDate.getDate() + 1);
-          while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+          let currentDate = new Date(startDateStr + 'T12:00:00');
+          
+          if (loanType.modality === 'weekly') {
+            while (currentDate.getDay() !== 5) {
+              currentDate.setDate(currentDate.getDate() + 1);
+            }
+          } else {
             currentDate.setDate(currentDate.getDate() + 1);
+            while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+              currentDate.setDate(currentDate.getDate() + 1);
+            }
           }
 
           for (let i = 0; i < numPayments; i++) {
@@ -104,8 +110,14 @@ export async function PUT(
               [parseInt(id), i + 1, paymentAmount, currentDate.toISOString()]
             );
             currentDate.setDate(currentDate.getDate() + 1);
-            while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-              currentDate.setDate(currentDate.getDate() + 1);
+            if (loanType.modality === 'weekly') {
+              while (currentDate.getDay() !== 5) {
+                currentDate.setDate(currentDate.getDate() + 1);
+              }
+            } else {
+              while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+                currentDate.setDate(currentDate.getDate() + 1);
+              }
             }
           }
         }
