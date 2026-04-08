@@ -206,7 +206,7 @@ export default function LoansPage() {
       
       if (newStatus === 'aprobado' && loan) {
         const phone = loan.client_phone.replace(/\D/g, '');
-        const installments = loan.modality === 'daily' ? 20 : loan.modality === 'weekly' ? 4 : loan.duration_months;
+        const installments = loan.modality === 'daily' ? 20 : loan.modality === 'weekly' ? 4 : Number(loan.duration_months);
         const installmentAmount = Math.round(loan.total_amount / installments);
         const modalityText = loan.modality === 'daily' ? 'Pago Diario' : loan.modality === 'weekly' ? 'Pago Semanal' : 'Pago Mensual';
         const endDate = loan.end_date ? new Date(loan.end_date).toLocaleDateString('es-AR') : 'N/A';
@@ -337,7 +337,10 @@ export default function LoansPage() {
                   if (!selectedType) return null;
                   const principal = parseFloat(formData.principal_amount) || 0;
                   const total = principal * (1 + (selectedType.interest_percentage || 0) / 100);
-                  const numPayments = selectedType.modality === 'daily' ? 20 : selectedType.modality === 'weekly' ? 4 : selectedType.duration_months;
+                  let numPayments = 1;
+                  if (selectedType.modality === 'daily') numPayments = 20;
+                  else if (selectedType.modality === 'weekly') numPayments = 4;
+                  else if (selectedType.modality === 'monthly') numPayments = Number(selectedType.duration_months);
                   const installmentAmount = total / numPayments;
                   const modalityLabel = selectedType.modality === 'daily' ? '(diarias)' : selectedType.modality === 'weekly' ? '(semanales)' : '(mensuales)';
                   return (
@@ -417,7 +420,7 @@ export default function LoansPage() {
                     <td data-label="Monto">${loan.principal_amount.toFixed(2)}</td>
                     <td data-label="Total">${loan.total_amount.toFixed(2)}</td>
                     <td data-label="Cuota">
-                      <div>${(loan.total_amount / (loan.modality === 'daily' ? 20 : loan.modality === 'weekly' ? 4 : loan.duration_months)).toFixed(2)}</div>
+                      <div>${(loan.total_amount / (loan.modality === 'daily' ? 20 : loan.modality === 'weekly' ? 4 : Number(loan.duration_months))).toFixed(2)}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                         {loan.paid_count || 0}/{loan.payment_count || 0}
                       </div>
