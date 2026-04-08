@@ -437,7 +437,7 @@ export default function ClientsPage() {
               <p><strong>Cliente:</strong> {selectedClient.name}</p>
               <p><strong>Teléfono:</strong> {selectedClient.phone}</p>
               <p><strong>Creado por:</strong> {selectedClient.creator_name} {selectedClient.creator_lastname}</p>
-              <p><strong>Fecha:</strong> {new Date(selectedClient.created_at).toLocaleString()}</p>
+              <p><strong>Fecha:</strong> {new Date(selectedClient.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</p>
             </div>
           </div>
         </div>
