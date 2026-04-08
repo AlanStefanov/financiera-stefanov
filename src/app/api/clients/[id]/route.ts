@@ -48,13 +48,13 @@ export async function PUT(
     }
     if (address !== undefined) {
       updates.push('address = ?');
-      values.push(address);
+      values.push(address || null);
     }
-    if (dni_front !== undefined) {
+    if (dni_front !== undefined && dni_front !== '') {
       updates.push('dni_front = ?');
       values.push(dni_front);
     }
-    if (dni_back !== undefined) {
+    if (dni_back !== undefined && dni_back !== '') {
       updates.push('dni_back = ?');
       values.push(dni_back);
     }
