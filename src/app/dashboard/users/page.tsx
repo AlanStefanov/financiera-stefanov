@@ -71,10 +71,8 @@ export default function UsersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Submitting user form:', formData);
     try {
       const token = localStorage.getItem('token');
-      console.log('Token:', token ? 'present' : 'missing');
       
       if (editingUser) {
         const res = await fetch(`/api/users/${editingUser.id}`, {
@@ -85,10 +83,8 @@ export default function UsersPage() {
           },
           body: JSON.stringify(formData),
         });
-        console.log('Edit response status:', res.status);
         const data = await res.json();
-        console.log('Edit response:', data);
-        alert(`Edit: ${res.status} - ${data.message || JSON.stringify(data)}`);
+        alert(`${res.status}: ${data.message || JSON.stringify(data)}`);
         if (res.ok) {
           resetForm();
           fetchUsers();
@@ -105,10 +101,8 @@ export default function UsersPage() {
           },
           body: JSON.stringify(formData),
         });
-        console.log('Create response status:', res.status);
         const data = await res.json();
-        console.log('Create response:', data);
-        alert(`Create: ${res.status} - ${data.message || JSON.stringify(data)}`);
+        alert(`${res.status}: ${data.message || JSON.stringify(data)}`);
         if (res.ok) {
           resetForm();
           fetchUsers();
