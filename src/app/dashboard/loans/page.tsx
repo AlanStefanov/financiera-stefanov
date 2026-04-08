@@ -56,6 +56,7 @@ export default function LoansPage() {
   const [loanTypes, setLoanTypes] = useState<LoanType[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [loanPayments, setLoanPayments] = useState<LoanPayment[]>([]);
@@ -296,23 +297,42 @@ export default function LoansPage() {
       </div>
 
       {showForm && (
-        <div className="card" style={{ marginBottom: '1.5rem' }}>
-          <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Cliente</label>
-                <select
-                  className="input"
-                  value={formData.client_id}
-                  onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
-                  required
-                >
-                  <option value="">Seleccionar cliente</option>
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, padding: '1rem'
+        }}>
+          <div className="card" style={{ maxWidth: '500px', width: '100%' }}>
+            <h3>Nuevo Préstamo</h3>
+            {submitting ? (
+              <div style={{ textAlign: 'center', padding: '2rem' }}>
+                <div style={{ 
+                  width: '40px', height: '40px', 
+                  border: '3px solid var(--border)', 
+                  borderTop: '3px solid var(--primary)',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                  margin: '0 auto 1rem'
+                }} />
+                <p>Generando orden de préstamo...</p>
               </div>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                <div style={{ display: 'grid', gap: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Cliente</label>
+                    <select
+                      className="input"
+                      value={formData.client_id}
+                      onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
+                      required
+                    >
+                      <option value="">Seleccionar cliente</option>
+                      {clients.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Tipo de Préstamo</label>
                 <select
@@ -389,10 +409,16 @@ export default function LoansPage() {
                 />
               </div>
             </div>
-            <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem' }} disabled={submitting}>
-              {submitting ? 'Generando orden...' : 'Crear Orden de Préstamo'}
-            </button>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+              <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitting}>
+                {submitting ? 'Generando...' : 'Crear Préstamo'}
+              </button>
+              <button type="button" className="btn btn-secondary" onClick={() => { setShowForm(false); setSubmitMessage(null); }}>
+                Cancelar
+              </button>
+            </div>
           </form>
+          )}
         </div>
       )}
 
