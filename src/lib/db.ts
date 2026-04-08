@@ -138,6 +138,52 @@ export const initializeDatabase = async () => {
     await getClient().execute(`INSERT INTO loan_types (name, duration_months, modality, interest_percentage) VALUES ('Préstamo 2 Meses - Diario', 2, 'daily', 50)`);
     await getClient().execute(`INSERT INTO loan_types (name, duration_months, modality, interest_percentage) VALUES ('Préstamo 2 Meses - Semanal', 2, 'weekly', 50)`);
   } else {
+    // Fix foreign key if needed
+    try {
+      await getClient().execute(`PRAGMA foreign_keys = OFF`);
+      await getClient().execute(`ALTER TABLE loans DROP FOREIGN KEY loans_loan_type_id_fkey`);
+    } catch (e) {}
+    
+    try {
+      await getClient().execute(`ALTER TABLE loans RENAME TO loans_backup`);
+    } catch (e) {}
+    
+    try {
+      await getClient().execute(`
+        CREATE TABLE IF NOT EXISTS loans (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          client_id INTEGER NOT NULL,
+          operator_id INTEGER NOT NULL,
+          loan_type_id INTEGER NOT NULL,
+          principal_amount REAL NOT NULL,
+          total_amount REAL NOT NULL,
+          start_date DATETIME NOT NULL,
+          end_date DATETIME NOT NULL,
+          status TEXT NOT NULL DEFAULT 'orden' CHECK(status IN ('orden', 'aprobado', 'finalizado')),
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (client_id) REFERENCES clients(id),
+          FOREIGN KEY (operator_id) REFERENCES users(id),
+          FOREIGN KEY (loan_type_id) REFERENCES loan_types(id)
+        )
+      `);
+      
+      await getClient().execute(`
+        INSERT INTO loans (id, client_id, operator_id, loan_type_id, principal_amount, total_amount, start_date, end_date, status, created_at, updated_at)
+        SELECT id, client_id, operator_id, loan_type_id, principal_amount, total_amount, start_date, end_date, status, created_at, updated_at 
+        FROM loans_backup
+      `);
+      
+      await getClient().execute(`DROP TABLE loans_backup`);
+      console.log('Migrated loans table to fix foreign key');
+    } catch (e: any) {
+      console.log('Loans migration note:', e.message);
+    }
+    
+    try {
+      await getClient().execute(`PRAGMA foreign_keys = ON`);
+    } catch (e) {}
+
     try {
       await getClient().execute(`ALTER TABLE loan_types RENAME TO loan_types_backup`);
     } catch (e) {
