@@ -14,7 +14,6 @@ interface Client {
   creator_lastname?: string;
   is_active?: number;
   created_at: string;
-  has_dni?: number;
 }
 
 interface User {
@@ -28,7 +27,6 @@ export default function ClientsPage() {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [user, setUser] = useState<User>({ role: 'operator' });
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [selectedClientFull, setSelectedClientFull] = useState<Client | null>(null);
   const [form, setForm] = useState({ name: '', phone: '', address: '', dni_front: '', dni_back: '' });
   const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const frontInputRef = useRef<HTMLInputElement>(null);
@@ -165,22 +163,6 @@ export default function ClientsPage() {
       }
     } catch (error) {
       console.error('Error deleting client:', error);
-    }
-  };
-
-  const handleViewDni = async (client: Client) => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/clients/${client.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setSelectedClientFull(data);
-        setSelectedClient(client);
-      }
-    } catch (error) {
-      console.error('Error fetching client details:', error);
     }
   };
 
@@ -342,10 +324,10 @@ export default function ClientsPage() {
                   <td data-label="Teléfono">{client.phone}</td>
                   <td data-label="DNI">
                     <button 
-                      onClick={() => handleViewDni(client)}
+                      onClick={() => setSelectedClient(client)}
                       style={{ 
-                        background: client.has_dni ? 'var(--success)' : 'var(--border)', 
-                        color: client.has_dni ? 'white' : 'var(--text-secondary)',
+                        background: client.dni_front ? 'var(--success)' : 'var(--border)', 
+                        color: client.dni_front ? 'white' : 'var(--text-secondary)',
                         border: 'none',
                         padding: '0.25rem 0.75rem',
                         borderRadius: 'var(--radius)',
@@ -353,7 +335,7 @@ export default function ClientsPage() {
                         fontSize: '0.8125rem'
                       }}
                     >
-                      {client.has_dni ? 'Ver DNI' : 'Sin DNI'}
+                      {client.dni_front ? 'Ver DNI' : 'Sin DNI'}
                     </button>
                   </td>
                   <td data-label="Creado por">
@@ -381,32 +363,32 @@ export default function ClientsPage() {
         </table>
       </div>
 
-      {selectedClient && selectedClientFull && (
+      {selectedClient && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 1000, padding: '1rem'
-        }} onClick={() => { setSelectedClient(null); setSelectedClientFull(null); }}>
+        }} onClick={() => setSelectedClient(null)}>
           <div className="card" style={{ maxWidth: '600px', width: '100%', maxHeight: '90vh', overflow: 'auto' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3>DNI de {selectedClient.name}</h3>
-              <button onClick={() => { setSelectedClient(null); setSelectedClientFull(null); }} className="btn btn-secondary" style={{ padding: '0.5rem' }}>
+              <button onClick={() => setSelectedClient(null)} className="btn btn-secondary" style={{ padding: '0.5rem' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
               </button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div>
                 <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>Frente</p>
-                {selectedClientFull.dni_front ? (
-                  <img src={selectedClientFull.dni_front} alt="DNI frente" style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
+                {selectedClient.dni_front ? (
+                  <img src={selectedClient.dni_front} alt="DNI frente" style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
                 ) : (
                   <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--background)', borderRadius: 'var(--radius)', color: 'var(--text-secondary)' }}>Sin imagen</div>
                 )}
               </div>
               <div>
                 <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>Dorso</p>
-                {selectedClientFull.dni_back ? (
-                  <img src={selectedClientFull.dni_back} alt="DNI dorso" style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
+                {selectedClient.dni_back ? (
+                  <img src={selectedClient.dni_back} alt="DNI dorso" style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
                 ) : (
                   <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--background)', borderRadius: 'var(--radius)', color: 'var(--text-secondary)' }}>Sin imagen</div>
                 )}

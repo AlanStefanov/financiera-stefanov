@@ -8,7 +8,7 @@ export async function GET(
   try {
     const { id } = await params;
     await getDB();
-    const client = await get('SELECT id, name, phone, address, created_by, is_active, created_at, updated_at FROM clients WHERE id = ?', [parseInt(id)]);
+    const client = await get('SELECT * FROM clients WHERE id = ?', [parseInt(id)]);
     
     if (!client) {
       return NextResponse.json({ message: 'Cliente no encontrado' }, { status: 404 });
