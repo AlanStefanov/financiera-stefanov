@@ -113,13 +113,17 @@ export default function ClientsPage() {
       const token = localStorage.getItem('token');
       
       if (editingClient) {
+        const updateData: any = { name: form.name, phone: form.phone, address: form.address };
+        if (form.dni_front) updateData.dni_front = form.dni_front;
+        if (form.dni_back) updateData.dni_back = form.dni_back;
+        
         const res = await fetch(`/api/clients/${editingClient.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(form),
+          body: JSON.stringify(updateData),
         });
 
         if (res.ok) {
