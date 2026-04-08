@@ -12,6 +12,14 @@ interface Stats {
   pendingLoans: number;
 }
 
+interface LoanType {
+  id: number;
+  name: string;
+  modality: string;
+  duration_months: number;
+  interest_percentage: number;
+}
+
 interface User {
   role: string;
 }
@@ -20,6 +28,10 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats>({ totalClients: 0, activeLoans: 0, remainingPayments: 0, totalLoaned: 0, totalCollected: 0, remainingToCollect: 0, pendingLoans: 0 });
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User>({ role: 'operator' });
+  const [loanTypes, setLoanTypes] = useState<LoanType[]>([]);
+  const [calcAmount, setCalcAmount] = useState('');
+  const [calcType, setCalcType] = useState('');
+  const [calcResult, setCalcResult] = useState<{ total: number; payment: number; installments: number } | null>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -96,10 +108,43 @@ export default function DashboardPage() {
     };
 
     fetchStats();
+
+    const fetchLoanTypes = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/loan-types', { headers: { Authorization: `Bearer ${token}` } });
+        if (res.ok) {
+          const types = await res.json();
+          setLoanTypes(Array.isArray(types) ? types.filter((t: LoanType) => t.interest_percentage) : []);
+        }
+      } catch (error) {
+        console.error('Error fetching loan types:', error);
+      }
+    };
+    fetchLoanTypes();
   }, []);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
+  };
+
+  const calculateLoan = () => {
+    const amount = parseFloat(calcAmount);
+    const typeId = parseInt(calcType);
+    if (!amount || !typeId || !loanTypes.length) return;
+
+    const selectedType = loanTypes.find(t => t.id === typeId);
+    if (!selectedType) return;
+
+    const total = amount * (1 + selectedType.interest_percentage / 100);
+    const installments = selectedType.modality === 'daily' ? 20 : 4;
+    const payment = total / installments;
+
+    setCalcResult({
+      total,
+      payment,
+      installments
+    });
   };
 
   if (loading) return <div>Cargando...</div>;
@@ -156,6 +201,61 @@ export default function DashboardPage() {
           <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Pagos Restantes</h3>
           <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>{stats.remainingPayments}</p>
         </div>
+      </div>
+
+      <div className="card" style={{ marginTop: '1.5rem' }}>
+        <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Calculadora de Préstamos</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'end' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monto</label>
+            <input
+              type="number"
+              className="input"
+              value={calcAmount}
+              onChange={(e) => setCalcAmount(e.target.value)}
+              placeholder="Monto a prestar"
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Tipo de Préstamo</label>
+            <select
+              className="input"
+              value={calcType}
+              onChange={(e) => setCalcType(e.target.value)}
+            >
+              <option value="">Seleccionar tipo</option>
+              {loanTypes.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} ({t.interest_percentage}% interés)
+                </option>
+              ))}
+            </select>
+          </div>
+          <button onClick={calculateLoan} className="btn btn-primary">
+            Calcular
+          </button>
+        </div>
+
+        {calcResult && (
+          <div style={{ 
+            marginTop: '1rem', 
+            padding: '1rem', 
+            background: 'var(--background)', 
+            borderRadius: 'var(--radius)',
+            border: '1px solid var(--primary)'
+          }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.9rem' }}>
+              <div>Monto solicitado:</div>
+              <div style={{ fontWeight: 'bold' }}>{formatCurrency(parseFloat(calcAmount))}</div>
+              <div>Total a pagar:</div>
+              <div style={{ fontWeight: 'bold', color: 'var(--danger)' }}>{formatCurrency(calcResult.total)}</div>
+              <div>Número de cuotas:</div>
+              <div>{calcResult.installments} cuotas</div>
+              <div>Valor de cada cuota:</div>
+              <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>{formatCurrency(calcResult.payment)}</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {user.role === 'admin' && (
