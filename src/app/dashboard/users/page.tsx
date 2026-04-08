@@ -26,6 +26,8 @@ export default function UsersPage() {
     role: 'operator'
   });
 
+  const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -51,6 +53,7 @@ export default function UsersPage() {
     setFormData({ username: '', name: '', lastname: '', phone: '', password: '', role: 'operator' });
     setEditingUser(null);
     setShowForm(false);
+    setFormMessage(null);
   };
 
   const handleEdit = (user: User) => {
@@ -83,6 +86,10 @@ export default function UsersPage() {
         if (res.ok) {
           resetForm();
           fetchUsers();
+          setFormMessage({ type: 'success', text: 'Usuario actualizado exitosamente' });
+        } else {
+          const data = await res.json();
+          setFormMessage({ type: 'error', text: data.message || 'Error al actualizar usuario' });
         }
       } else {
         const res = await fetch('/api/users', {
@@ -96,10 +103,15 @@ export default function UsersPage() {
         if (res.ok) {
           resetForm();
           fetchUsers();
+          setFormMessage({ type: 'success', text: 'Usuario guardado exitosamente' });
+        } else {
+          const data = await res.json();
+          setFormMessage({ type: 'error', text: data.message || 'Error al guardar usuario' });
         }
       }
     } catch (error) {
       console.error('Error saving user:', error);
+      setFormMessage({ type: 'error', text: 'Error de conexión' });
     }
   };
 
@@ -130,6 +142,17 @@ export default function UsersPage() {
 
       {showForm && (
         <div className="card" style={{ marginBottom: '1.5rem' }}>
+          {formMessage && (
+            <div style={{ 
+              padding: '0.75rem 1rem', 
+              marginBottom: '1rem', 
+              borderRadius: 'var(--radius)',
+              background: formMessage.type === 'success' ? 'var(--success)' : 'var(--danger)',
+              color: 'white'
+            }}>
+              {formMessage.text}
+            </div>
+          )}
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div>
