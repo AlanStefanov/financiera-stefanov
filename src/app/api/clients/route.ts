@@ -59,8 +59,9 @@ export async function POST(request: NextRequest) {
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET) as { id: number };
-    } catch (jwtError) {
-      return NextResponse.json({ message: 'Token inválido o expirado' }, { status: 401 });
+    } catch (jwtError: any) {
+      console.error('JWT Error:', jwtError.message);
+      return NextResponse.json({ message: 'Token inválido o expirado: ' + jwtError.message }, { status: 401 });
     }
 
     let body;
