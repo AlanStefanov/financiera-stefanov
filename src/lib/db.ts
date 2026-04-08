@@ -51,6 +51,14 @@ export const exec = async (sql: string) => {
 };
 
 export const initializeDatabase = async () => {
+  // Settings table for migrations flag
+  await getClient().execute(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    )
+  `);
+
   await getClient().execute(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -127,9 +135,19 @@ export const initializeDatabase = async () => {
   `);
 
   await getClient().execute(`CREATE INDEX IF NOT EXISTS idx_loans_client_id ON loans(client_id)`);
+  await getClient().execute(`CREATE INDEX IF NOT EXISTS idx_loan_payments_loan_id ON loan_payments(loan_id)`);
+  await getClient().execute(`CREATE INDEX IF NOT EXISTS idx_loan_payments_is_paid ON loan_payments(is_paid)`);
+  await getClient().execute(`CREATE INDEX IF NOT EXISTS idx_loans_client_id ON loans(client_id)`);
   await getClient().execute(`CREATE INDEX IF NOT EXISTS idx_loans_operator_id ON loans(operator_id)`);
   await getClient().execute(`CREATE INDEX IF NOT EXISTS idx_loans_status ON loans(status)`);
-  await getClient().execute(`CREATE INDEX IF NOT EXISTS idx_loan_payments_loan_id ON loan_payments(loan_id)`);
+
+  // Only run migrations once
+  const migrationsRan = await getClient().execute("SELECT value FROM settings WHERE key = 'migrations_ran'");
+  if (migrationsRan.rows.length > 0) {
+    console.log('Migrations already ran, skipping');
+    console.log('Base de datos Turso inicializada correctamente');
+    return;
+  }
 
   const loanTypesResult = await getClient().execute('SELECT COUNT(*) as count FROM loan_types');
   if (loanTypesResult.rows[0]?.count === 0) {
@@ -232,6 +250,9 @@ export const initializeDatabase = async () => {
     const hashedPassword = bcrypt.hashSync('Dr@wssap1234k', 10);
     await getClient().execute('INSERT INTO users (username, name, lastname, phone, password, role) VALUES (?, ?, ?, ?, ?, ?)', ['admin', 'Admin', 'Sistema', '1122334455', hashedPassword, 'admin']);
   }
+
+  // Mark migrations as completed
+  await getClient().execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('migrations_ran', 'true')");
 
   console.log('Base de datos Turso inicializada correctamente');
 };
