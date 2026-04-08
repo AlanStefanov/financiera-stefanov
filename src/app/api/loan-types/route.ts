@@ -41,9 +41,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Faltan campos requeridos' }, { status: 400 });
     }
 
+    const validMonths = [1, 2, 3];
+    const validModalities = ['daily', 'weekly', 'monthly'];
+    
+    if (!validMonths.includes(Number(duration_months))) {
+      return NextResponse.json({ message: 'Duración debe ser 1, 2 o 3 meses' }, { status: 400 });
+    }
+    
+    if (!validModalities.includes(modality)) {
+      return NextResponse.json({ message: 'Modalidad debe ser daily, weekly o monthly' }, { status: 400 });
+    }
+
     const result = await run(
       'INSERT INTO loan_types (name, duration_months, modality, interest_percentage) VALUES (?, ?, ?, ?)',
-      [name, duration_months, modality, interest_percentage]
+      [name, Number(duration_months), modality, Number(interest_percentage)]
     );
 
     const loanType = await get('SELECT * FROM loan_types WHERE id = ?', [result.lastID]);
@@ -52,7 +63,8 @@ export async function POST(request: NextRequest) {
       message: 'Tipo de préstamo creado exitosamente',
       loanType
     }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ error: 'Error creating loan type' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Error creating loan type:', error);
+    return NextResponse.json({ message: 'Error al crear tipo de préstamo: ' + error.message }, { status: 500 });
   }
 }
