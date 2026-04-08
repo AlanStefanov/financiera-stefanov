@@ -56,12 +56,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
-    const body = await request.json();
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET) as { id: number };
+    } catch (jwtError) {
+      return NextResponse.json({ message: 'Token inválido o expirado' }, { status: 401 });
+    }
+
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      return NextResponse.json({ message: 'Error: formato de datos inválido' }, { status: 400 });
+    }
+    
     const { name, phone, address, dni_front, dni_back } = body;
 
     if (!name || !phone) {
       return NextResponse.json({ message: 'Nombre y teléfono son requeridos' }, { status: 400 });
+    }
+
+    const dniFrontSize = dni_front ? dni_front.length : 0;
+    const dniBackSize = dni_back ? dni_back.length : 0;
+    const totalSize = dniFrontSize + dniBackSize;
+    
+    if (totalSize > 5000000) {
+      return NextResponse.json({ message: 'Las imágenes son muy grandes. Por favor use fotos más pequeñas (máx 5MB)' }, { status: 413 });
     }
 
     const result = await run(
@@ -85,6 +105,6 @@ export async function POST(request: NextRequest) {
     if (error.message && error.message.includes('body')) {
       return NextResponse.json({ message: 'Error: el tamaño de los datos excede el límite permitido. Intenta usar fotos más pequeñas.' }, { status: 413 });
     }
-    return NextResponse.json({ message: 'Error al crear cliente', error: error.message }, { status: 500 });
+    return NextResponse.json({ message: 'Error al crear cliente: ' + (error.message || 'Error desconocido'), error: error.message }, { status: 500 });
   }
 }
