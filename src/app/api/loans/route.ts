@@ -73,15 +73,15 @@ export async function POST(request: NextRequest) {
 
       await run('DELETE FROM loan_payments WHERE loan_id = ?', [existingLoan.id]);
 
-      const numPayments = loanType.modality === 'daily' ? 20 : 4;
-      const paymentAmount = (existingLoan.total_amount as number) / numPayments;
+      const numPayments = Number(loanType.modality === 'daily' ? 20 : loanType.modality === 'weekly' ? 4 : loanType.duration_months);
+      const paymentAmount = Number(existingLoan.total_amount) / numPayments;
 
       let currentDate = new Date(existingLoan.start_date as string);
       if (loanType.modality === 'weekly') {
         while (currentDate.getDay() !== 5) {
           currentDate.setDate(currentDate.getDate() + 1);
         }
-      } else {
+      } else if (loanType.modality === 'daily') {
         currentDate = getNextBusinessDay(new Date(existingLoan.start_date as string));
       }
 
@@ -90,13 +90,14 @@ export async function POST(request: NextRequest) {
           'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
           [existingLoan.id, i + 1, paymentAmount, currentDate.toISOString()]
         );
-        currentDate.setDate(currentDate.getDate() + 1);
         if (loanType.modality === 'weekly') {
           while (currentDate.getDay() !== 5) {
             currentDate.setDate(currentDate.getDate() + 1);
           }
-        } else {
+        } else if (loanType.modality === 'daily') {
           currentDate = getNextBusinessDay(currentDate);
+        } else {
+          currentDate.setMonth(currentDate.getMonth() + 1);
         }
       }
 
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
       [client_id, decoded.id, loan_type_id, principal_amount, totalAmount, start.toISOString(), end.toISOString()]
     );
 
-    const numPayments = loanType.modality === 'daily' ? 20 : 4;
+    const numPayments = Number(loanType.modality === 'daily' ? 20 : loanType.modality === 'weekly' ? 4 : loanType.duration_months);
     const paymentAmount = totalAmount / numPayments;
 
     let currentDate = new Date(start);
@@ -136,7 +137,7 @@ export async function POST(request: NextRequest) {
       while (currentDate.getDay() !== 5) {
         currentDate.setDate(currentDate.getDate() + 1);
       }
-    } else {
+    } else if (loanType.modality === 'daily') {
       currentDate = getNextBusinessDay(start);
     }
 
@@ -145,13 +146,14 @@ export async function POST(request: NextRequest) {
         'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
         [result.lastID, i + 1, paymentAmount, currentDate.toISOString()]
       );
-      currentDate.setDate(currentDate.getDate() + 1);
       if (loanType.modality === 'weekly') {
         while (currentDate.getDay() !== 5) {
           currentDate.setDate(currentDate.getDate() + 1);
         }
-      } else {
+      } else if (loanType.modality === 'daily') {
         currentDate = getNextBusinessDay(currentDate);
+      } else {
+        currentDate.setMonth(currentDate.getMonth() + 1);
       }
     }
 

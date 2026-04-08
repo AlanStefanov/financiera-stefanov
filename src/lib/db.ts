@@ -84,8 +84,8 @@ export const initializeDatabase = async () => {
     CREATE TABLE IF NOT EXISTS loan_types (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
-      duration_months INTEGER NOT NULL CHECK(duration_months IN (1, 2)),
-      modality TEXT NOT NULL CHECK(modality IN ('daily', 'weekly')),
+      duration_months INTEGER NOT NULL CHECK(duration_months IN (1, 2, 3)),
+      modality TEXT NOT NULL CHECK(modality IN ('daily', 'weekly', 'monthly')),
       interest_percentage REAL NOT NULL,
       is_active INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
