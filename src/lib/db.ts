@@ -138,81 +138,91 @@ export const initializeDatabase = async () => {
     await getClient().execute(`INSERT INTO loan_types (name, duration_months, modality, interest_percentage) VALUES ('Préstamo 2 Meses - Diario', 2, 'daily', 50)`);
     await getClient().execute(`INSERT INTO loan_types (name, duration_months, modality, interest_percentage) VALUES ('Préstamo 2 Meses - Semanal', 2, 'weekly', 50)`);
   } else {
-    // Fix foreign key if needed
+    // Clean up backup table if exists
     try {
-      await getClient().execute(`PRAGMA foreign_keys = OFF`);
-      await getClient().execute(`ALTER TABLE loans DROP FOREIGN KEY loans_loan_type_id_fkey`);
+      await getClient().execute('DROP TABLE IF EXISTS loan_types_backup');
     } catch (e) {}
     
     try {
-      await getClient().execute(`ALTER TABLE loans RENAME TO loans_backup`);
-    } catch (e) {}
-    
-    try {
-      await getClient().execute(`
-        CREATE TABLE IF NOT EXISTS loans (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          client_id INTEGER NOT NULL,
-          operator_id INTEGER NOT NULL,
-          loan_type_id INTEGER NOT NULL,
-          principal_amount REAL NOT NULL,
-          total_amount REAL NOT NULL,
-          start_date DATETIME NOT NULL,
-          end_date DATETIME NOT NULL,
-          status TEXT NOT NULL DEFAULT 'orden' CHECK(status IN ('orden', 'aprobado', 'finalizado')),
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (client_id) REFERENCES clients(id),
-          FOREIGN KEY (operator_id) REFERENCES users(id),
-          FOREIGN KEY (loan_type_id) REFERENCES loan_types(id)
-        )
-      `);
-      
-      await getClient().execute(`
-        INSERT INTO loans (id, client_id, operator_id, loan_type_id, principal_amount, total_amount, start_date, end_date, status, created_at, updated_at)
-        SELECT id, client_id, operator_id, loan_type_id, principal_amount, total_amount, start_date, end_date, status, created_at, updated_at 
-        FROM loans_backup
-      `);
-      
-      await getClient().execute(`DROP TABLE loans_backup`);
-      console.log('Migrated loans table to fix foreign key');
-    } catch (e: any) {
-      console.log('Loans migration note:', e.message);
-    }
-    
-    try {
-      await getClient().execute(`PRAGMA foreign_keys = ON`);
+      await getClient().execute('DROP TABLE IF EXISTS loans_backup');
     } catch (e) {}
 
+    // Fix loans FK if pointing to wrong table
     try {
-      await getClient().execute(`ALTER TABLE loan_types RENAME TO loan_types_backup`);
-    } catch (e) {
-      console.log('Rename table not needed, trying to update constraints');
-    }
-    
-    try {
-      await getClient().execute(`
-        CREATE TABLE IF NOT EXISTS loan_types (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          duration_months INTEGER NOT NULL CHECK(duration_months IN (1, 2, 3)),
-          modality TEXT NOT NULL CHECK(modality IN ('daily', 'weekly', 'monthly')),
-          interest_percentage REAL NOT NULL,
-          is_active INTEGER DEFAULT 1,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      
-      await getClient().execute(`
-        INSERT INTO loan_types (id, name, duration_months, modality, interest_percentage, is_active, created_at)
-        SELECT id, name, duration_months, modality, interest_percentage, is_active, created_at 
-        FROM loan_types_backup
-      `);
-      
-      await getClient().execute(`DROP TABLE loan_types_backup`);
-      console.log('Migrated loan_types table to support monthly modality');
+      const loansSchema = await getClient().execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='loans'");
+      const loansSql = String(loansSchema.rows[0]?.sql || '');
+      if (loansSql.includes('loan_types_backup')) {
+        await getClient().execute(`PRAGMA foreign_keys = OFF`);
+        
+        await getClient().execute(`ALTER TABLE loans RENAME TO loans_new`);
+        
+        await getClient().execute(`
+          CREATE TABLE IF NOT EXISTS loans (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id INTEGER NOT NULL,
+            operator_id INTEGER NOT NULL,
+            loan_type_id INTEGER NOT NULL,
+            principal_amount REAL NOT NULL,
+            total_amount REAL NOT NULL,
+            start_date DATETIME NOT NULL,
+            end_date DATETIME NOT NULL,
+            status TEXT NOT NULL DEFAULT 'orden' CHECK(status IN ('orden', 'aprobado', 'finalizado')),
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (client_id) REFERENCES clients(id),
+            FOREIGN KEY (operator_id) REFERENCES users(id),
+            FOREIGN KEY (loan_type_id) REFERENCES loan_types(id)
+          )
+        `);
+        
+        await getClient().execute(`
+          INSERT INTO loans (id, client_id, operator_id, loan_type_id, principal_amount, total_amount, start_date, end_date, status, created_at, updated_at)
+          SELECT id, client_id, operator_id, loan_type_id, principal_amount, total_amount, start_date, end_date, status, created_at, updated_at 
+          FROM loans_new
+        `);
+        
+        await getClient().execute(`DROP TABLE loans_new`);
+        await getClient().execute(`PRAGMA foreign_keys = ON`);
+        console.log('Fixed loans FK');
+      }
     } catch (e: any) {
-      console.log('Migration note:', e.message);
+      console.log('Loans FK fix note:', e.message);
+    }
+
+    // Fix loan_types FK constraints if needed
+    try {
+      const loanTypesSchema = await getClient().execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='loan_types'");
+      const currentSchema = String(loanTypesSchema.rows[0]?.sql || '');
+      
+      if (!currentSchema.includes("modality IN ('daily', 'weekly', 'monthly')")) {
+        await getClient().execute(`PRAGMA foreign_keys = OFF`);
+        
+        await getClient().execute(`ALTER TABLE loan_types RENAME TO loan_types_old`);
+        
+        await getClient().execute(`
+          CREATE TABLE IF NOT EXISTS loan_types (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            duration_months INTEGER NOT NULL CHECK(duration_months IN (1, 2, 3)),
+            modality TEXT NOT NULL CHECK(modality IN ('daily', 'weekly', 'monthly')),
+            interest_percentage REAL NOT NULL,
+            is_active INTEGER DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        
+        await getClient().execute(`
+          INSERT INTO loan_types (id, name, duration_months, modality, interest_percentage, is_active, created_at)
+          SELECT id, name, duration_months, modality, interest_percentage, is_active, created_at 
+          FROM loan_types_old
+        `);
+        
+        await getClient().execute(`DROP TABLE loan_types_old`);
+        await getClient().execute(`PRAGMA foreign_keys = ON`);
+        console.log('Fixed loan_types schema');
+      }
+    } catch (e: any) {
+      console.log('Loan types schema fix note:', e.message);
     }
   }
 
