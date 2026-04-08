@@ -57,12 +57,51 @@ export default function ClientsPage() {
     fetchClients();
   }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'dni_front' | 'dni_back') => {
+  const compressImage = (base64Data: string, maxSizeKB: number = 512): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        const maxDimension = 1200;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = (height * maxDimension) / width;
+            width = maxDimension;
+          } else {
+            width = (width * maxDimension) / height;
+            height = maxDimension;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        let quality = 0.8;
+        let result = canvas.toDataURL('image/jpeg', quality);
+        
+        while (result.length > maxSizeKB * 1024 && quality > 0.3) {
+          quality -= 0.1;
+          result = canvas.toDataURL('image/jpeg', quality);
+        }
+        
+        resolve(result);
+      };
+      img.src = base64Data;
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, field: 'dni_front' | 'dni_back') => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = () => {
-        setForm(prev => ({ ...prev, [field]: reader.result as string }));
+      reader.onload = async () => {
+        const compressed = await compressImage(reader.result as string);
+        setForm(prev => ({ ...prev, [field]: compressed }));
       };
       reader.readAsDataURL(file);
     }
