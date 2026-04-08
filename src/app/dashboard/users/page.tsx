@@ -204,7 +204,7 @@ export default function UsersPage() {
       )}
 
       <div className="card">
-        <table className="table">
+        <table className="table table-mobile-card">
           <thead>
             <tr>
               <th>ID</th>
@@ -224,12 +224,12 @@ export default function UsersPage() {
             ) : (
               users.map((user) => (
                 <tr key={user.id}>
-                  <td>{user.id}</td>
-                  <td>{user.username}</td>
-                  <td>{user.name}</td>
-                  <td>{user.lastname}</td>
-                  <td>{user.phone}</td>
-                  <td>
+                  <td data-label="ID">{user.id}</td>
+                  <td data-label="Usuario">{user.username}</td>
+                  <td data-label="Nombre">{user.name}</td>
+                  <td data-label="Apellido">{user.lastname}</td>
+                  <td data-label="Teléfono">{user.phone}</td>
+                  <td data-label="Rol">
                     <span style={{
                       padding: '0.25rem 0.5rem',
                       borderRadius: '4px',
@@ -239,11 +239,11 @@ export default function UsersPage() {
                       {user.role === 'admin' ? 'Administrador' : 'Operador'}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Acciones">
                     <button
                       onClick={() => handleEdit(user)}
                       className="btn btn-primary"
-                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem', marginRight: '0.5rem' }}
+                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
                     >
                       Editar
                     </button>
