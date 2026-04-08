@@ -57,7 +57,7 @@ export default function LoginPage() {
               <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
             </svg>
           </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#0f172a' }}>Microcreditos Stefanov</h1>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#0f172a' }}>Microcréditos Stefanov</h1>
           <p style={{ color: '#64748b', marginTop: '0.5rem' }}>Sistema de Gestión de Préstamos</p>
         </div>
         
@@ -162,7 +162,7 @@ export default function LoginPage() {
         </div>
 
         <p style={{ marginTop: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.8125rem' }}>
-          © 2026 Microcreditos Stefanov. Todos los derechos reservados.
+          © 2026 Microcréditos Stefanov. Todos los derechos reservados.
         </p>
       </div>
       <style jsx>{`

@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Microcreditos Stefanov",
+  title: "Microcréditos Stefanov",
   description: "Sistema de gestión de préstamos",
   icons: {
     icon: "/favicon.svg"
