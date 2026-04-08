@@ -139,17 +139,35 @@ export const initializeDatabase = async () => {
     await getClient().execute(`INSERT INTO loan_types (name, duration_months, modality, interest_percentage) VALUES ('Préstamo 2 Meses - Semanal', 2, 'weekly', 50)`);
   } else {
     try {
-      await getClient().execute(`ALTER TABLE loan_types DROP CONSTRAINT loan_types_duration_months_check`);
-    } catch (e) {}
+      await getClient().execute(`ALTER TABLE loan_types RENAME TO loan_types_backup`);
+    } catch (e) {
+      console.log('Rename table not needed, trying to update constraints');
+    }
+    
     try {
-      await getClient().execute(`ALTER TABLE loan_types DROP CONSTRAINT loan_types_modality_check`);
-    } catch (e) {}
-    try {
-      await getClient().execute(`ALTER TABLE loan_types ADD CONSTRAINT loan_types_duration_months_check CHECK(duration_months IN (1, 2, 3))`);
-    } catch (e) {}
-    try {
-      await getClient().execute(`ALTER TABLE loan_types ADD CONSTRAINT loan_types_modality_check CHECK(modality IN ('daily', 'weekly', 'monthly'))`);
-    } catch (e) {}
+      await getClient().execute(`
+        CREATE TABLE IF NOT EXISTS loan_types (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          duration_months INTEGER NOT NULL CHECK(duration_months IN (1, 2, 3)),
+          modality TEXT NOT NULL CHECK(modality IN ('daily', 'weekly', 'monthly')),
+          interest_percentage REAL NOT NULL,
+          is_active INTEGER DEFAULT 1,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
+      await getClient().execute(`
+        INSERT INTO loan_types (id, name, duration_months, modality, interest_percentage, is_active, created_at)
+        SELECT id, name, duration_months, modality, interest_percentage, is_active, created_at 
+        FROM loan_types_backup
+      `);
+      
+      await getClient().execute(`DROP TABLE loan_types_backup`);
+      console.log('Migrated loan_types table to support monthly modality');
+    } catch (e: any) {
+      console.log('Migration note:', e.message);
+    }
   }
 
   const adminResult = await getClient().execute("SELECT COUNT(*) as count FROM users WHERE username = 'admin'");
