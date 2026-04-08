@@ -71,8 +71,10 @@ export default function UsersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Submitting user form:', formData);
     try {
       const token = localStorage.getItem('token');
+      console.log('Token:', token ? 'present' : 'missing');
       
       if (editingUser) {
         const res = await fetch(`/api/users/${editingUser.id}`, {
@@ -83,12 +85,15 @@ export default function UsersPage() {
           },
           body: JSON.stringify(formData),
         });
+        console.log('Edit response status:', res.status);
+        const data = await res.json();
+        console.log('Edit response:', data);
+        alert(`Edit: ${res.status} - ${data.message || JSON.stringify(data)}`);
         if (res.ok) {
           resetForm();
           fetchUsers();
           setFormMessage({ type: 'success', text: 'Usuario actualizado exitosamente' });
         } else {
-          const data = await res.json();
           setFormMessage({ type: 'error', text: data.message || 'Error al actualizar usuario' });
         }
       } else {
@@ -100,17 +105,21 @@ export default function UsersPage() {
           },
           body: JSON.stringify(formData),
         });
+        console.log('Create response status:', res.status);
+        const data = await res.json();
+        console.log('Create response:', data);
+        alert(`Create: ${res.status} - ${data.message || JSON.stringify(data)}`);
         if (res.ok) {
           resetForm();
           fetchUsers();
           setFormMessage({ type: 'success', text: 'Usuario guardado exitosamente' });
         } else {
-          const data = await res.json();
           setFormMessage({ type: 'error', text: data.message || 'Error al guardar usuario' });
         }
       }
     } catch (error) {
       console.error('Error saving user:', error);
+      alert(`Error: ${error}`);
       setFormMessage({ type: 'error', text: 'Error de conexión' });
     }
   };
