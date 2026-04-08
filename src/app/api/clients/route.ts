@@ -42,8 +42,9 @@ export async function GET(request: NextRequest) {
       ORDER BY c.name
     `);
     return NextResponse.json(clients);
-  } catch (error) {
-    return NextResponse.json({ error: 'Error fetching clients' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Error fetching clients:', error);
+    return NextResponse.json({ message: 'Error al obtener clientes', error: error.message }, { status: 500 });
   }
 }
 
@@ -79,8 +80,11 @@ export async function POST(request: NextRequest) {
       message: 'Cliente creado exitosamente',
       client
     }, { status: 201 });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Error creating client' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Error creating client:', error);
+    if (error.message && error.message.includes('body')) {
+      return NextResponse.json({ message: 'Error: el tamaño de los datos excede el límite permitido. Intenta usar fotos más pequeñas.' }, { status: 413 });
+    }
+    return NextResponse.json({ message: 'Error al crear cliente', error: error.message }, { status: 500 });
   }
 }

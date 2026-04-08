@@ -28,6 +28,7 @@ export default function ClientsPage() {
   const [user, setUser] = useState<User>({ role: 'operator' });
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [form, setForm] = useState({ name: '', phone: '', address: '', dni_front: '', dni_back: '' });
+  const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
 
@@ -87,6 +88,10 @@ export default function ClientsPage() {
           setEditingClient(null);
           setShowForm(false);
           fetchClients();
+          setFormMessage({ type: 'success', text: 'Cliente actualizado exitosamente' });
+        } else {
+          const data = await res.json();
+          setFormMessage({ type: 'error', text: data.message || 'Error al actualizar cliente' });
         }
       } else {
         const res = await fetch('/api/clients', {
@@ -102,6 +107,10 @@ export default function ClientsPage() {
           setForm({ name: '', phone: '', address: '', dni_front: '', dni_back: '' });
           setShowForm(false);
           fetchClients();
+          setFormMessage({ type: 'success', text: 'Cliente guardado exitosamente' });
+        } else {
+          const data = await res.json();
+          setFormMessage({ type: 'error', text: data.message || 'Error al guardar cliente' });
         }
       }
     } catch (error) {
@@ -138,10 +147,30 @@ export default function ClientsPage() {
     }
   };
 
+  const handleDelete = async (id: number) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/clients/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        fetchClients();
+      } else {
+        const data = await res.json();
+        alert(data.message || 'Error al eliminar cliente');
+      }
+    } catch (error) {
+      console.error('Error deleting client:', error);
+    }
+  };
+
   const resetForm = () => {
     setForm({ name: '', phone: '', address: '', dni_front: '', dni_back: '' });
     setEditingClient(null);
     setShowForm(false);
+    setFormMessage(null);
   };
   
 
@@ -158,6 +187,17 @@ export default function ClientsPage() {
 
       {showForm && (
         <div className="card" style={{ marginBottom: '1.5rem' }}>
+          {formMessage && (
+            <div style={{ 
+              padding: '0.75rem 1rem', 
+              marginBottom: '1rem', 
+              borderRadius: 'var(--radius)',
+              background: formMessage.type === 'success' ? 'var(--success)' : 'var(--danger)',
+              color: 'white'
+            }}>
+              {formMessage.text}
+            </div>
+          )}
           <form onSubmit={handleSubmit}>
             <div className="form-grid">
               <div className="form-group">
@@ -222,6 +262,7 @@ export default function ClientsPage() {
                   ref={frontInputRef}
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   onChange={(e) => handleFileChange(e, 'dni_front')}
                   style={{ padding: '0.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', width: '100%' }}
                 />
@@ -237,6 +278,7 @@ export default function ClientsPage() {
                   ref={backInputRef}
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   onChange={(e) => handleFileChange(e, 'dni_back')}
                   style={{ padding: '0.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', width: '100%' }}
                 />
@@ -306,9 +348,14 @@ export default function ClientsPage() {
                       Editar
                     </button>
                     {user.role === 'admin' && (
-                      <button onClick={() => handleToggleActive(client.id, client.is_active || 1)} className="btn btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}>
-                        {client.is_active === 0 ? 'Activar' : 'Desactivar'}
-                      </button>
+                      <>
+                        <button onClick={() => handleDelete(client.id)} className="btn btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem', marginRight: '0.5rem' }}>
+                          Eliminar
+                        </button>
+                        <button onClick={() => handleToggleActive(client.id, client.is_active || 1)} className="btn btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}>
+                          {client.is_active === 0 ? 'Activar' : 'Desactivar'}
+                        </button>
+                      </>
                     )}
                   </td>
                 </tr>
