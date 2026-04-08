@@ -215,13 +215,16 @@ export default function LoansPage() {
       }
       
       if (newStatus === 'aprobado' && loan) {
+        const storedUser = localStorage.getItem('user');
+        const currentUser = storedUser ? JSON.parse(storedUser) : { name: 'el operador', lastname: '', username: '' };
+        const operatorDisplay = currentUser.username ? `${currentUser.name || ''} ${currentUser.lastname || ''} (@${currentUser.username})` : `${currentUser.name || ''} ${currentUser.lastname || ''}`.trim() || 'el operador';
+        
         const phone = loan.client_phone.replace(/\D/g, '');
         const installments = loan.modality === 'daily' ? 20 : loan.modality === 'weekly' ? 4 : Number(loan.duration_months);
         const installmentAmount = Math.round(loan.total_amount / installments);
         const modalityText = loan.modality === 'daily' ? 'Pago Diario' : loan.modality === 'weekly' ? 'Pago Semanal' : 'Pago Mensual';
         const endDate = loan.end_date ? new Date(loan.end_date).toLocaleDateString('es-AR') : 'N/A';
-        const operatorName = loan.operator_name || 'el operador';
-        const message = `¡Hola ${loan.client_name}! Tu préstamo ha sido aprobado.\n\nMonto: $${loan.principal_amount.toLocaleString()}\nTotal: $${loan.total_amount.toLocaleString()}\nTipo: ${modalityText}\nCuotas: ${installments} de $${installmentAmount.toLocaleString()}\nFecha de fin: ${endDate}\n\nSu operador de créditos es: ${operatorName}. Comuníquese con él para gestionar los pagos.\n\nGracias por confiar en Microcréditos Stefanov.`;
+        const message = `¡Hola ${loan.client_name}! Tu préstamo ha sido aprobado.\n\nMonto: $${loan.principal_amount.toLocaleString()}\nTotal: $${loan.total_amount.toLocaleString()}\nTipo: ${modalityText}\nCuotas: ${installments} de $${installmentAmount.toLocaleString()}\nFecha de fin: ${endDate}\n\nTu operador de créditos es: ${operatorDisplay}. Comuníquese con él para gestionar los pagos.\n\nGracias por confiar en Microcréditos Stefanov.`;
         window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
       }
     } catch (error) {
