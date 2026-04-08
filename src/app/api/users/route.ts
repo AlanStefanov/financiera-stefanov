@@ -37,7 +37,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
     }
 
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      return NextResponse.json({ message: 'Error: formato de datos inválido' }, { status: 400 });
+    }
+    
     const { username, name, lastname, phone, password, role } = body;
 
     if (!username || !name || !lastname || !phone || !password || !role) {
@@ -65,7 +71,8 @@ export async function POST(request: NextRequest) {
       message: 'Usuario creado exitosamente',
       user
     }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ error: 'Error creating user' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Error creating user:', error);
+    return NextResponse.json({ message: 'Error al crear usuario: ' + (error.message || 'Error desconocido') }, { status: 500 });
   }
 }
