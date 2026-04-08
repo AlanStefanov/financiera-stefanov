@@ -137,7 +137,10 @@ export default function DashboardPage() {
     if (!selectedType) return;
 
     const total = amount * (1 + selectedType.interest_percentage / 100);
-    const installments = selectedType.modality === 'daily' ? 20 : 4;
+    let installments = 1;
+    if (selectedType.modality === 'daily') installments = 20;
+    else if (selectedType.modality === 'weekly') installments = 4;
+    else if (selectedType.modality === 'monthly') installments = Number(selectedType.duration_months);
     const payment = total / installments;
 
     setCalcResult({
