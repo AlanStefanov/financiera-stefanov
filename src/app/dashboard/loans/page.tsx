@@ -336,94 +336,95 @@ export default function LoansPage() {
                       ))}
                     </select>
                   </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Tipo de Préstamo</label>
-                <select
-                  className="input"
-                  value={formData.loan_type_id}
-                  onChange={(e) => setFormData({ ...formData, loan_type_id: e.target.value })}
-                  required
-                >
-                  <option value="">Seleccionar tipo</option>
-                  {loanTypes.map((lt) => (
-                    <option key={lt.id} value={lt.id}>
-                      {lt.name} - {lt.interest_percentage}% interés
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monto Principal</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="input"
-                  value={formData.principal_amount}
-                  onChange={(e) => setFormData({ ...formData, principal_amount: e.target.value })}
-                  required
-                />
-              </div>
-              {formData.loan_type_id && formData.principal_amount && (
-                (() => {
-                  const selectedType = loanTypes.find(t => t.id === parseInt(formData.loan_type_id));
-                  if (!selectedType) return null;
-                  
-                  const principal = parseFloat(formData.principal_amount) || 0;
-                  const total = principal * (1 + (selectedType.interest_percentage || 0) / 100);
-                  let numPayments = 1;
-                  if (selectedType.modality === 'daily') numPayments = 20;
-                  else if (selectedType.modality === 'weekly') numPayments = 4;
-                  else if (selectedType.modality === 'monthly') numPayments = Number(selectedType.duration_months);
-                  const installmentAmount = total / numPayments;
-                  const modalityLabel = selectedType.modality === 'daily' ? '(diarias)' : selectedType.modality === 'weekly' ? '(semanales)' : '(mensuales)';
-                  return (
-                    <div style={{ 
-                      marginTop: '1rem', 
-                      padding: '1rem', 
-                      background: 'var(--background)', 
-                      borderRadius: 'var(--radius)',
-                      border: '1px solid var(--primary)'
-                    }}>
-                      <h4 style={{ margin: '0 0 0.5rem', color: 'var(--primary)' }}>Resumen del Préstamo</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.9rem' }}>
-                        <div>Monto solicitado:</div>
-                        <div style={{ fontWeight: 'bold' }}>${principal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
-                        <div>Interés ({selectedType.interest_percentage}%):</div>
-                        <div>${(total - principal).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
-                        <div>Total a pagar:</div>
-                        <div style={{ fontWeight: 'bold', color: 'var(--danger)' }}>${total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
-                        <div> Número de cuotas:</div>
-                        <div>{numPayments} {modalityLabel}</div>
-                        <div>Valor de cada cuota:</div>
-                        <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>${installmentAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
-                      </div>
-                    </div>
-                  );
-                })()
-              )}
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Fecha de Inicio</label>
-                <input
-                  type="date"
-                  className="input"
-                  value={formData.start_date}
-                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-              <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitting}>
-                {submitting ? 'Generando...' : 'Crear Préstamo'}
-              </button>
-              <button type="button" className="btn btn-secondary" onClick={() => { setShowForm(false); setSubmitMessage(null); }}>
-                Cancelar
-              </button>
-            </div>
-          </form>
-          )}
-        </div>
-      )}
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Tipo de Préstamo</label>
+                    <select
+                      className="input"
+                      value={formData.loan_type_id}
+                      onChange={(e) => setFormData({ ...formData, loan_type_id: e.target.value })}
+                      required
+                    >
+                      <option value="">Seleccionar tipo</option>
+                      {loanTypes.map((lt) => (
+                        <option key={lt.id} value={lt.id}>
+                          {lt.name} - {lt.interest_percentage}% interés
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monto Principal</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="input"
+                      value={formData.principal_amount}
+                      onChange={(e) => setFormData({ ...formData, principal_amount: e.target.value })}
+                      required
+                    />
+                  </div>
+                  {formData.loan_type_id && formData.principal_amount && (
+                    (() => {
+                      const selectedType = loanTypes.find(t => t.id === parseInt(formData.loan_type_id));
+                      if (!selectedType) return null;
+                      
+                      const principal = parseFloat(formData.principal_amount) || 0;
+                      const total = principal * (1 + (selectedType.interest_percentage || 0) / 100);
+                      let numPayments = 1;
+                      if (selectedType.modality === 'daily') numPayments = 20;
+                      else if (selectedType.modality === 'weekly') numPayments = 4;
+                      else if (selectedType.modality === 'monthly') numPayments = Number(selectedType.duration_months);
+                      const installmentAmount = total / numPayments;
+                      const modalityLabel = selectedType.modality === 'daily' ? '(diarias)' : selectedType.modality === 'weekly' ? '(semanales)' : '(mensuales)';
+                      return (
+                        <div style={{ 
+                          marginTop: '1rem', 
+                          padding: '1rem', 
+                          background: 'var(--background)', 
+                          borderRadius: 'var(--radius)',
+                          border: '1px solid var(--primary)'
+                        }}>
+                          <h4 style={{ margin: '0 0 0.5rem', color: 'var(--primary)' }}>Resumen del Préstamo</h4>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.9rem' }}>
+                            <div>Monto solicitado:</div>
+                            <div style={{ fontWeight: 'bold' }}>${principal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                            <div>Interés ({selectedType.interest_percentage}%):</div>
+                            <div>${(total - principal).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                            <div>Total a pagar:</div>
+                            <div style={{ fontWeight: 'bold', color: 'var(--danger)' }}>${total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                            <div> Número de cuotas:</div>
+                            <div>{numPayments} {modalityLabel}</div>
+                            <div>Valor de cada cuota:</div>
+                            <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>${installmentAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                          </div>
+                        </div>
+                      );
+                    })()
+                  )}
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Fecha de Inicio</label>
+                    <input
+                      type="date"
+                      className="input"
+                      value={formData.start_date}
+                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                    <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitting}>
+                      {submitting ? 'Generando...' : 'Crear Préstamo'}
+                    </button>
+                    <button type="button" className="btn btn-secondary" onClick={() => { setShowForm(false); setSubmitMessage(null); }}>
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+          </div>
+          </div>
+        )}
 
       <div className="card">
         <table className="table table-mobile-card">
