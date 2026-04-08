@@ -383,7 +383,7 @@ export default function LoansPage() {
       )}
 
       <div className="card">
-        <table className="table">
+        <table className="table table-mobile-card">
           <thead>
             <tr>
               <th>ID</th>
@@ -401,27 +401,30 @@ export default function LoansPage() {
           <tbody>
             {loans.length === 0 ? (
               <tr>
-                <td colSpan={8} style={{ textAlign: 'center' }}>No hay préstamos</td>
+                <td colSpan={10} style={{ textAlign: 'center' }}>No hay préstamos</td>
               </tr>
             ) : (
               loans.map((loan) => {
                 const statusStyle = getStatusColor(loan.status);
                 return (
                   <tr key={loan.id}>
-                    <td>{loan.id}</td>
-                    <td>{loan.client_name}<br/><small>{loan.client_phone}</small></td>
-                    <td>${loan.principal_amount.toFixed(2)}</td>
-                    <td>${loan.total_amount.toFixed(2)}</td>
-                    <td>
-                      ${(loan.total_amount / (loan.modality === 'daily' ? 20 : 4)).toFixed(2)}
+                    <td data-label="ID">{loan.id}</td>
+                    <td data-label="Cliente">
+                      <div style={{ fontWeight: 500 }}>{loan.client_name}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{loan.client_phone}</div>
+                    </td>
+                    <td data-label="Monto">${loan.principal_amount.toFixed(2)}</td>
+                    <td data-label="Total">${loan.total_amount.toFixed(2)}</td>
+                    <td data-label="Cuota">
+                      <div>${(loan.total_amount / (loan.modality === 'daily' ? 20 : 4)).toFixed(2)}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                        {loan.paid_count || 0}/{loan.payment_count || 0} pagadas
+                        {loan.paid_count || 0}/{loan.payment_count || 0}
                       </div>
                     </td>
-                    <td>{loan.loan_type_name}</td>
-                    <td>{new Date(loan.start_date).toLocaleDateString()}</td>
-                    <td>{loan.end_date ? new Date(loan.end_date).toLocaleDateString() : '-'}</td>
-                    <td>
+                    <td data-label="Tipo">{loan.loan_type_name}</td>
+                    <td data-label="Inicio">{new Date(loan.start_date).toLocaleDateString()}</td>
+                    <td data-label="Fin">{loan.end_date ? new Date(loan.end_date).toLocaleDateString() : '-'}</td>
+                    <td data-label="Estado">
                       <span style={{
                         padding: '0.25rem 0.5rem',
                         borderRadius: '4px',
@@ -431,11 +434,11 @@ export default function LoansPage() {
                         {loan.status === 'orden' ? 'Orden' : loan.status === 'aprobado' ? 'Aprobado' : 'Finalizado'}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Acciones">
                       <button
                         onClick={() => handleViewPayments(loan)}
                         className="btn btn-primary"
-                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem', marginRight: '0.5rem' }}
+                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
                       >
                         Ver Cuotas
                       </button>
@@ -445,7 +448,7 @@ export default function LoansPage() {
                             <button
                               onClick={() => handleUpdateStatus(loan.id, loan.status === 'orden' ? 'aprobado' : 'finalizado')}
                               className="btn btn-primary"
-                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem', marginRight: '0.5rem' }}
+                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
                             >
                               {loan.status === 'orden' ? 'Aprobar' : 'Finalizar'}
                             </button>
@@ -453,7 +456,7 @@ export default function LoansPage() {
                           <button
                             onClick={() => handleRegeneratePayments(loan.id)}
                             className="btn btn-secondary"
-                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem', marginRight: '0.5rem' }}
+                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
                             title="Regenerar cuotas"
                           >
                             ↻
