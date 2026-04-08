@@ -165,6 +165,7 @@ export default function LoanTypesPage() {
                 >
                   <option value="daily">Diario (L-V)</option>
                   <option value="weekly">Semanal</option>
+                  <option value="monthly">Mensual</option>
                 </select>
               </div>
               <div className="form-group">
