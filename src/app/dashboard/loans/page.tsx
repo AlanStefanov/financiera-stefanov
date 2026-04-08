@@ -206,9 +206,9 @@ export default function LoansPage() {
       
       if (newStatus === 'aprobado' && loan) {
         const phone = loan.client_phone.replace(/\D/g, '');
-        const installments = loan.modality === 'daily' ? 20 : 4;
+        const installments = loan.modality === 'daily' ? 20 : loan.modality === 'weekly' ? 4 : loan.duration_months;
         const installmentAmount = Math.round(loan.total_amount / installments);
-        const modalityText = loan.modality === 'daily' ? 'Pago Diario' : 'Pago Semanal';
+        const modalityText = loan.modality === 'daily' ? 'Pago Diario' : loan.modality === 'weekly' ? 'Pago Semanal' : 'Pago Mensual';
         const endDate = loan.end_date ? new Date(loan.end_date).toLocaleDateString('es-AR') : 'N/A';
         const operatorName = loan.operator_name || 'el operador';
         const message = `¡Hola ${loan.client_name}! Tu préstamo ha sido aprobado.\n\nMonto: $${loan.principal_amount.toLocaleString()}\nTotal: $${loan.total_amount.toLocaleString()}\nTipo: ${modalityText}\nCuotas: ${installments} de $${installmentAmount.toLocaleString()}\nFecha de fin: ${endDate}\n\nSu operador de créditos es: ${operatorName}. Comuníquese con él para gestionar los pagos.\n\nGracias por confiar en Microcréditos Stefanov.`;
@@ -337,8 +337,9 @@ export default function LoansPage() {
                   if (!selectedType) return null;
                   const principal = parseFloat(formData.principal_amount) || 0;
                   const total = principal * (1 + (selectedType.interest_percentage || 0) / 100);
-                  const numPayments = selectedType.modality === 'daily' ? 20 : 4;
+                  const numPayments = selectedType.modality === 'daily' ? 20 : selectedType.modality === 'weekly' ? 4 : selectedType.duration_months;
                   const installmentAmount = total / numPayments;
+                  const modalityLabel = selectedType.modality === 'daily' ? '(diarias)' : selectedType.modality === 'weekly' ? '(semanales)' : '(mensuales)';
                   return (
                     <div style={{ 
                       marginTop: '1rem', 
@@ -356,7 +357,7 @@ export default function LoansPage() {
                         <div>Total a pagar:</div>
                         <div style={{ fontWeight: 'bold', color: 'var(--danger)' }}>${total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
                         <div> Número de cuotas:</div>
-                        <div>{numPayments} {selectedType.modality === 'daily' ? '(diarias)' : '(semanales)'}</div>
+                        <div>{numPayments} {modalityLabel}</div>
                         <div>Valor de cada cuota:</div>
                         <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>${installmentAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
                       </div>
@@ -416,7 +417,7 @@ export default function LoansPage() {
                     <td data-label="Monto">${loan.principal_amount.toFixed(2)}</td>
                     <td data-label="Total">${loan.total_amount.toFixed(2)}</td>
                     <td data-label="Cuota">
-                      <div>${(loan.total_amount / (loan.modality === 'daily' ? 20 : 4)).toFixed(2)}</div>
+                      <div>${(loan.total_amount / (loan.modality === 'daily' ? 20 : loan.modality === 'weekly' ? 4 : loan.duration_months)).toFixed(2)}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                         {loan.paid_count || 0}/{loan.payment_count || 0}
                       </div>
