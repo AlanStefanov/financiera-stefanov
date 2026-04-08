@@ -35,9 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     const clients = await all(`
-      SELECT c.id, c.name, c.phone, c.address, c.created_by, c.is_active, c.created_at, c.updated_at,
-             u.name as creator_name, u.lastname as creator_lastname,
-             CASE WHEN c.dni_front IS NOT NULL AND c.dni_front != '' THEN 1 ELSE 0 END as has_dni
+      SELECT c.*, u.name as creator_name, u.lastname as creator_lastname 
       FROM clients c 
       LEFT JOIN users u ON c.created_by = u.id 
       WHERE c.is_active = 1
