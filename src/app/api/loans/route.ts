@@ -60,6 +60,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { client_id, loan_type_id, principal_amount, start_date, regenerate_payments } = body;
 
+    console.log('Creating loan:', { client_id, loan_type_id, principal_amount, start_date });
+
     if (regenerate_payments && client_id) {
       const existingLoan = await get('SELECT l.*, lt.modality FROM loans l JOIN loan_types lt ON l.loan_type_id = lt.id WHERE l.client_id = ? AND l.status = ? ORDER BY l.id DESC LIMIT 1', [client_id, 'orden']);
       if (!existingLoan) {
@@ -119,6 +121,14 @@ export async function POST(request: NextRequest) {
 
     const totalAmount = principal_amount * (1 + (loanType.interest_percentage as number) / 100);
     
+    console.log('Loan data:', { 
+      client_id, 
+      operator_id: decoded.id, 
+      loan_type_id, 
+      principal_amount, 
+      totalAmount 
+    });
+
     const start = new Date(start_date + 'T12:00:00');
     const end = new Date(start_date + 'T12:00:00');
     end.setMonth(end.getMonth() + (loanType.duration_months as number));
