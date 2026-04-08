@@ -201,7 +201,7 @@ export default function LoanTypesPage() {
       )}
 
       <div className="card">
-        <table className="table">
+        <table className="table table-mobile-card">
           <thead>
             <tr>
               <th>Nombre</th>
@@ -220,27 +220,27 @@ export default function LoanTypesPage() {
             ) : (
               loanTypes.map((lt) => (
                 <tr key={lt.id}>
-                  <td style={{ fontWeight: 500 }}>{lt.name}</td>
-                  <td>{lt.duration_months} mes(es)</td>
-                  <td>{lt.modality === 'daily' ? 'Diario' : 'Semanal'}</td>
-                  <td>{lt.interest_percentage}%</td>
-                  <td>
+                  <td data-label="Nombre" style={{ fontWeight: 500 }}>{lt.name}</td>
+                  <td data-label="Duración">{lt.duration_months} mes(es)</td>
+                  <td data-label="Modalidad">{lt.modality === 'daily' ? 'Diario' : 'Semanal'}</td>
+                  <td data-label="Costo">{lt.interest_percentage}%</td>
+                  <td data-label="Estado">
                     <span className={`badge ${lt.is_active ? 'badge-success' : 'badge-secondary'}`}>
                       {lt.is_active ? 'Activo' : 'Inactivo'}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Acciones">
                     <button
                       onClick={() => handleEdit(lt)}
                       className="btn btn-secondary"
-                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem', marginRight: '0.5rem' }}
+                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
                     >
                       Editar
                     </button>
                     <button
                       onClick={() => handleToggleActive(lt.id, lt.is_active)}
                       className="btn btn-primary"
-                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem', marginRight: '0.5rem' }}
+                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
                     >
                       {lt.is_active ? 'Desactivar' : 'Activar'}
                     </button>

@@ -481,17 +481,17 @@ export default function LoansPage() {
 
       {selectedLoan && (
         <div style={{ marginTop: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h2>Cuotas del Préstamo #{selectedLoan.id}</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <h2 style={{ fontSize: '1.25rem' }}>Cuotas del Préstamo #{selectedLoan.id}</h2>
             <button onClick={() => setSelectedLoan(null)} className="btn btn-primary">Cerrar</button>
           </div>
-          <div className="card">
+          <div className="card" style={{ fontSize: '0.875rem' }}>
             <p><strong>Cliente:</strong> {selectedLoan.client_name}</p>
             <p><strong>Monto:</strong> ${selectedLoan.principal_amount.toFixed(2)} | <strong>Total:</strong> ${selectedLoan.total_amount.toFixed(2)}</p>
             <p><strong>Tipo:</strong> {selectedLoan.loan_type_name}</p>
           </div>
-          <div className="card" style={{ marginTop: '1rem' }}>
-            <table className="table">
+          <div className="card" style={{ marginTop: '1rem', overflowX: 'auto' }}>
+            <table className="table table-mobile-card">
               <thead>
                 <tr>
                   <th>#</th>
@@ -506,8 +506,8 @@ export default function LoansPage() {
                   const remaining = payment.amount - (payment.paid_amount || 0);
                   return (
                     <tr key={payment.id}>
-                      <td>{payment.payment_number}</td>
-                      <td>
+                      <td data-label="#">{payment.payment_number}</td>
+                      <td data-label="Monto">
                         <div>${payment.amount.toFixed(2)}</div>
                         {(payment.paid_amount || 0) > 0 && (
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
@@ -515,8 +515,8 @@ export default function LoansPage() {
                           </div>
                         )}
                       </td>
-                      <td>{new Date(payment.due_date).toLocaleDateString()}</td>
-                      <td>
+                      <td data-label="Fecha">{new Date(payment.due_date).toLocaleDateString()}</td>
+                      <td data-label="Estado">
                         <span style={{
                           padding: '0.25rem 0.5rem',
                           borderRadius: '4px',
@@ -526,22 +526,22 @@ export default function LoansPage() {
                           {payment.is_paid ? 'Pagado' : 'Pendiente'}
                         </span>
                       </td>
-                      <td style={{ display: 'flex', gap: '0.5rem' }}>
+                      <td data-label="Acciones" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         {!payment.is_paid && (
                           <>
                             <button
                               onClick={() => setPartialPayment({ payment, amount: payment.amount.toString() })}
                               className="btn btn-secondary"
-                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
+                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
                             >
-                              Pago Parcial
+                              Parcial
                             </button>
                             <button
                               onClick={() => handleTogglePayment(payment.id, payment.is_paid)}
                               className="btn btn-primary"
-                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
+                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
                             >
-                              Marcar Pagado
+                              Pagar
                             </button>
                           </>
                         )}
@@ -549,7 +549,7 @@ export default function LoansPage() {
                           <button
                             onClick={() => handleTogglePayment(payment.id, payment.is_paid)}
                             className="btn btn-secondary"
-                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
+                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
                           >
                             Desmarcar
                           </button>
