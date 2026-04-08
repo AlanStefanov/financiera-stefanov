@@ -335,7 +335,10 @@ export default function LoansPage() {
                 (() => {
                   const selectedType = loanTypes.find(t => t.id === parseInt(formData.loan_type_id));
                   if (!selectedType) return null;
-                  alert(`DEBUG: modality=${selectedType.modality}, duration=${selectedType.duration_months}`);
+                  
+                  // Debug - show all loan types
+                  alert('loanTypes: ' + JSON.stringify(loanTypes.map(t => ({id: t.id, mod: t.modality, dur: t.duration_months}))) + '\nselected: ' + JSON.stringify({modality: selectedType.modality, duration: selectedType.duration_months}));
+                  
                   const principal = parseFloat(formData.principal_amount) || 0;
                   const total = principal * (1 + (selectedType.interest_percentage || 0) / 100);
                   let numPayments = 1;
