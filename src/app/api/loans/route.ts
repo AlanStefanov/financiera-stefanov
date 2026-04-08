@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const decoded = jwt.verify(token, JWT_SECRET) as { id: number; role: string };
     
     let query = `
-      SELECT l.*, c.name as client_name, c.phone as client_phone, u.username as operator_name,
+      SELECT l.*, c.name as client_name, c.phone as client_phone, u.name || ' ' || u.lastname as operator_name,
              lt.name as loan_type_name, lt.modality, lt.duration_months, lt.interest_percentage,
              (SELECT COUNT(*) FROM loan_payments WHERE loan_id = l.id) as payment_count,
              (SELECT COUNT(*) FROM loan_payments WHERE loan_id = l.id AND is_paid = 1) as paid_count
