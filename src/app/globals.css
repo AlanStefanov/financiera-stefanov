@@ -329,6 +329,53 @@ body {
     font-size: 0.8125rem;
   }
   
+  .table-mobile-card {
+    display: block;
+  }
+  
+  .table-mobile-card thead {
+    display: none;
+  }
+  
+  .table-mobile-card tbody,
+  .table-mobile-card tr,
+  .table-mobile-card td {
+    display: block;
+    width: 100%;
+  }
+  
+  .table-mobile-card tr {
+    margin-bottom: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 0.75rem;
+  }
+  
+  .table-mobile-card td {
+    padding: 0.375rem 0;
+    border-bottom: none;
+    text-align: left;
+  }
+  
+  .table-mobile-card td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+  }
+  
+  .table-mobile-card td:last-child {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+  }
+  
   .form-grid {
     grid-template-columns: 1fr;
   }

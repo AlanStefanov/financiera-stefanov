@@ -262,7 +262,6 @@ export default function ClientsPage() {
                   ref={frontInputRef}
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   onChange={(e) => handleFileChange(e, 'dni_front')}
                   style={{ padding: '0.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', width: '100%' }}
                 />
@@ -278,7 +277,6 @@ export default function ClientsPage() {
                   ref={backInputRef}
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   onChange={(e) => handleFileChange(e, 'dni_back')}
                   style={{ padding: '0.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', width: '100%' }}
                 />
@@ -299,7 +297,7 @@ export default function ClientsPage() {
       )}
 
       <div className="card">
-        <table className="table">
+        <table className="table table-mobile-card">
           <thead>
             <tr>
               <th>ID</th>
@@ -318,13 +316,13 @@ export default function ClientsPage() {
             ) : (
               clients.map((client) => (
                 <tr key={client.id}>
-                  <td>{client.id}</td>
-                  <td>
+                  <td data-label="ID">{client.id}</td>
+                  <td data-label="Nombre">
                     <div style={{ fontWeight: 500 }}>{client.name}</div>
                     {client.address && <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>{client.address}</div>}
                   </td>
-                  <td>{client.phone}</td>
-                  <td>
+                  <td data-label="Teléfono">{client.phone}</td>
+                  <td data-label="DNI">
                     <button 
                       onClick={() => setSelectedClient(client)}
                       style={{ 
@@ -340,16 +338,16 @@ export default function ClientsPage() {
                       {client.dni_front ? 'Ver DNI' : 'Sin DNI'}
                     </button>
                   </td>
-                  <td>
+                  <td data-label="Creado por">
                     {client.creator_name ? `${client.creator_name} ${client.creator_lastname}` : '-'}
                   </td>
-                  <td>
-                    <button onClick={() => handleEdit(client)} className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem', marginRight: '0.5rem' }}>
+                  <td data-label="Acciones">
+                    <button onClick={() => handleEdit(client)} className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}>
                       Editar
                     </button>
                     {user.role === 'admin' && (
                       <>
-                        <button onClick={() => handleDelete(client.id)} className="btn btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem', marginRight: '0.5rem' }}>
+                        <button onClick={() => handleDelete(client.id)} className="btn btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}>
                           Eliminar
                         </button>
                         <button onClick={() => handleToggleActive(client.id, client.is_active || 1)} className="btn btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}>
