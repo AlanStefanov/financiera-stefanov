@@ -86,6 +86,15 @@ export async function DELETE(
   try {
     const { id } = await params;
     await getDB();
+    
+    const loans = await get('SELECT COUNT(*) as count FROM loans WHERE client_id = ?', [parseInt(id)]);
+    
+    if (loans && Number(loans.count) > 0) {
+      return NextResponse.json({ 
+        message: 'No se puede eliminar el cliente porque tiene préstamos asociados' 
+      }, { status: 400 });
+    }
+
     const result = await run('DELETE FROM clients WHERE id = ?', [parseInt(id)]);
     
     if (result.changes === 0) {
