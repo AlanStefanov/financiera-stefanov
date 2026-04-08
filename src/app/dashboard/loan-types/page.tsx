@@ -177,6 +177,7 @@ export default function LoanTypesPage() {
                 >
                   <option value={1}>1 Mes</option>
                   <option value={2}>2 Meses</option>
+                  <option value={3}>3 Meses</option>
                 </select>
               </div>
               <div className="form-group">
@@ -223,7 +224,7 @@ export default function LoanTypesPage() {
                 <tr key={lt.id}>
                   <td data-label="Nombre" style={{ fontWeight: 500 }}>{lt.name}</td>
                   <td data-label="Duración">{lt.duration_months} mes(es)</td>
-                  <td data-label="Modalidad">{lt.modality === 'daily' ? 'Diario' : 'Semanal'}</td>
+                  <td data-label="Modalidad">{lt.modality === 'daily' ? 'Diario' : lt.modality === 'weekly' ? 'Semanal' : 'Mensual'}</td>
                   <td data-label="Costo">{lt.interest_percentage}%</td>
                   <td data-label="Estado">
                     <span className={`badge ${lt.is_active ? 'badge-success' : 'badge-secondary'}`}>
