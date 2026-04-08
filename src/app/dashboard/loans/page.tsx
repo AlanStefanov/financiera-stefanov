@@ -422,8 +422,8 @@ export default function LoansPage() {
                       </div>
                     </td>
                     <td data-label="Tipo">{loan.loan_type_name}</td>
-                    <td data-label="Inicio">{new Date(loan.start_date).toLocaleDateString()}</td>
-                    <td data-label="Fin">{loan.end_date ? new Date(loan.end_date).toLocaleDateString() : '-'}</td>
+                    <td data-label="Inicio">{new Date(loan.start_date).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</td>
+                    <td data-label="Fin">{loan.end_date ? new Date(loan.end_date).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) : '-'}</td>
                     <td data-label="Estado">
                       <span style={{
                         padding: '0.25rem 0.5rem',
@@ -515,7 +515,7 @@ export default function LoansPage() {
                           </div>
                         )}
                       </td>
-                      <td data-label="Fecha">{new Date(payment.due_date).toLocaleDateString()}</td>
+                      <td data-label="Fecha">{new Date(payment.due_date).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</td>
                       <td data-label="Estado">
                         <span style={{
                           padding: '0.25rem 0.5rem',
