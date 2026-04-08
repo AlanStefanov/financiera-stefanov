@@ -129,6 +129,13 @@ export async function POST(request: NextRequest) {
       totalAmount 
     });
 
+    // Verify foreign keys exist
+    const clientExists = await get('SELECT id FROM clients WHERE id = ?', [client_id]);
+    const operatorExists = await get('SELECT id FROM users WHERE id = ?', [decoded.id]);
+    const loanTypeExists = await get('SELECT id FROM loan_types WHERE id = ?', [loan_type_id]);
+    
+    console.log('FK check:', { clientExists, operatorExists, loanTypeExists });
+
     const start = new Date(start_date + 'T12:00:00');
     const end = new Date(start_date + 'T12:00:00');
     end.setMonth(end.getMonth() + (loanType.duration_months as number));
