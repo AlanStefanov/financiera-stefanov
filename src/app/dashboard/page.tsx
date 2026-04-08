@@ -136,8 +136,6 @@ export default function DashboardPage() {
     const selectedType = loanTypes.find(t => t.id === typeId);
     if (!selectedType) return;
 
-    alert(`DEBUG: id=${selectedType.id}, name=${selectedType.name}, modality=${selectedType.modality}, duration=${selectedType.duration_months}`);
-
     const total = amount * (1 + selectedType.interest_percentage / 100);
     let installments = 1;
     if (selectedType.modality === 'daily') installments = 20;
