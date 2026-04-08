@@ -163,8 +163,8 @@ export async function POST(request: NextRequest) {
       message: 'Orden de préstamo creada exitosamente',
       loan
     }, { status: 201 });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Error creating loan' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Error creating loan:', error);
+    return NextResponse.json({ message: 'Error al crear préstamo: ' + (error.message || 'Error desconocido') }, { status: 500 });
   }
 }
