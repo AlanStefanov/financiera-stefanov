@@ -55,6 +55,7 @@ export default function LoansPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loanTypes, setLoanTypes] = useState<LoanType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [loanPayments, setLoanPayments] = useState<LoanPayment[]>([]);
@@ -97,6 +98,9 @@ export default function LoansPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
+    
+    setSubmitting(true);
     try {
       const token = localStorage.getItem('token');
       const res = await fetch('/api/loans', {
@@ -117,9 +121,14 @@ export default function LoansPage() {
         setFormData({ client_id: '', loan_type_id: '', principal_amount: '', start_date: '' });
         setShowForm(false);
         fetchData();
+      } else {
+        const data = await res.json();
+        alert(data.message || 'Error al crear préstamo');
       }
     } catch (error) {
       console.error('Error creating loan:', error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -380,8 +389,8 @@ export default function LoansPage() {
                 />
               </div>
             </div>
-            <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem' }}>
-              Crear Orden de Préstamo
+            <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem' }} disabled={submitting}>
+              {submitting ? 'Generando orden...' : 'Crear Orden de Préstamo'}
             </button>
           </form>
         </div>
@@ -397,6 +406,7 @@ export default function LoansPage() {
               <th>Total</th>
               <th>Cuota</th>
               <th>Tipo</th>
+              <th>Operador</th>
               <th>Inicio</th>
               <th>Fin</th>
               <th>Estado</th>
@@ -427,6 +437,7 @@ export default function LoansPage() {
                       </div>
                     </td>
                     <td data-label="Tipo">{loan.loan_type_name}</td>
+                    <td data-label="Operador">{loan.operator_name || '-'}</td>
                     <td data-label="Inicio">{new Date(loan.start_date).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</td>
                     <td data-label="Fin">{loan.end_date ? new Date(loan.end_date).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) : '-'}</td>
                     <td data-label="Estado">
