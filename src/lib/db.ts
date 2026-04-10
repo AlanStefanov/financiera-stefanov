@@ -80,6 +80,9 @@ export const initializeDatabase = async () => {
       address TEXT,
       dni_front TEXT,
       dni_back TEXT,
+      bcra_status TEXT,
+      bcra_updated_at DATETIME,
+      cuil TEXT,
       created_by INTEGER,
       is_active INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -145,6 +148,16 @@ export const initializeDatabase = async () => {
   const migrationsRan = await getClient().execute("SELECT value FROM settings WHERE key = 'migrations_ran'");
   if (migrationsRan.rows.length > 0) {
     console.log('Migrations already ran, skipping');
+    // Still run column migrations for new fields
+    try {
+      await getClient().execute('ALTER TABLE clients ADD COLUMN bcra_status TEXT');
+    } catch (e) { /* ignore if exists */ }
+    try {
+      await getClient().execute('ALTER TABLE clients ADD COLUMN bcra_updated_at DATETIME');
+    } catch (e) { /* ignore if exists */ }
+    try {
+      await getClient().execute('ALTER TABLE clients ADD COLUMN cuil TEXT');
+    } catch (e) { /* ignore if exists */ }
     console.log('Base de datos Turso inicializada correctamente');
     return;
   }
@@ -250,6 +263,17 @@ export const initializeDatabase = async () => {
     const hashedPassword = bcrypt.hashSync('Dr@wssap1234k', 10);
     await getClient().execute('INSERT INTO users (username, name, lastname, phone, password, role) VALUES (?, ?, ?, ?, ?, ?)', ['admin', 'Admin', 'Sistema', '1122334455', hashedPassword, 'admin']);
   }
+
+  // Add bcra columns to clients if they don't exist (for existing databases)
+  try {
+    await getClient().execute('ALTER TABLE clients ADD COLUMN bcra_status TEXT');
+  } catch (e) { /* ignore if exists */ }
+  try {
+    await getClient().execute('ALTER TABLE clients ADD COLUMN bcra_updated_at DATETIME');
+  } catch (e) { /* ignore if exists */ }
+  try {
+    await getClient().execute('ALTER TABLE clients ADD COLUMN cuil TEXT');
+  } catch (e) { /* ignore if exists */ }
 
   // Mark migrations as completed
   await getClient().execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('migrations_ran', 'true')");

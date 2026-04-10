@@ -9,6 +9,9 @@ interface Client {
   address?: string;
   dni_front?: string;
   dni_back?: string;
+  cuil?: string;
+  bcra_status?: string;
+  bcra_updated_at?: string;
   created_by?: number;
   creator_name?: string;
   creator_lastname?: string;
@@ -27,8 +30,9 @@ export default function ClientsPage() {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [user, setUser] = useState<User>({ role: 'operator' });
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [form, setForm] = useState({ name: '', phone: '', address: '', dni_front: '', dni_back: '' });
+  const [form, setForm] = useState({ name: '', phone: '', address: '', dni_front: '', dni_back: '', cuil: '' });
   const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [consultingBcra, setConsultingBcra] = useState<number | null>(null);
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
 
@@ -113,7 +117,7 @@ export default function ClientsPage() {
       const token = localStorage.getItem('token');
       
       if (editingClient) {
-        const updateData: any = { name: form.name, phone: form.phone, address: form.address };
+        const updateData: any = { name: form.name, phone: form.phone, address: form.address, cuil: form.cuil };
         if (form.dni_front) updateData.dni_front = form.dni_front;
         if (form.dni_back) updateData.dni_back = form.dni_back;
         
@@ -127,7 +131,7 @@ export default function ClientsPage() {
         });
 
         if (res.ok) {
-          setForm({ name: '', phone: '', address: '', dni_front: '', dni_back: '' });
+          setForm({ name: '', phone: '', address: '', dni_front: '', dni_back: '', cuil: '' });
           setEditingClient(null);
           setShowForm(false);
           fetchClients();
@@ -147,7 +151,7 @@ export default function ClientsPage() {
         });
 
         if (res.ok) {
-          setForm({ name: '', phone: '', address: '', dni_front: '', dni_back: '' });
+          setForm({ name: '', phone: '', address: '', dni_front: '', dni_back: '', cuil: '' });
           setShowForm(false);
           fetchClients();
           setFormMessage({ type: 'success', text: 'Cliente guardado exitosamente' });
@@ -168,7 +172,8 @@ export default function ClientsPage() {
       phone: client.phone,
       address: client.address || '',
       dni_front: '',
-      dni_back: ''
+      dni_back: '',
+      cuil: client.cuil || ''
     });
     setShowForm(true);
   };
@@ -209,8 +214,49 @@ export default function ClientsPage() {
     }
   };
 
+  const handleConsultBcra = async (clientId: number) => {
+    const client = clients.find(c => c.id === clientId);
+    if (!client || !client.cuil) {
+      alert('El cliente no tiene CUIL registrado');
+      return;
+    }
+
+    setConsultingBcra(clientId);
+
+    try {
+      const res = await fetch('/api/bcra-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cuil: client.cuil })
+      });
+      
+      const data = await res.json();
+      setConsultingBcra(null);
+      
+      if (res.ok && data.status) {
+        await fetch(`/api/clients/${clientId}`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ bcra_status: data.status })
+        });
+        fetchClients();
+        alert(`Estado BCRA: ${data.status}\nTotal deuda: $${data.totalDeuda?.toFixed(2) || 0}\nEntidades: ${data.entidades?.length || 0}`);
+      } else {
+        const errMsg = data.message || data.error || 'Error al consultar BCRA';
+        alert(errMsg + (data.trying ? ' (El servicio está temporalmente no disponible, intente más tarde)' : ''));
+      }
+    } catch (error) {
+      setConsultingBcra(null);
+      console.error('BCRA check error:', error);
+      alert('Error al consultar BCRA');
+    }
+  };
+
   const resetForm = () => {
-    setForm({ name: '', phone: '', address: '', dni_front: '', dni_back: '' });
+    setForm({ name: '', phone: '', address: '', dni_front: '', dni_back: '', cuil: '' });
     setEditingClient(null);
     setShowForm(false);
     setFormMessage(null);
@@ -261,6 +307,17 @@ export default function ClientsPage() {
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
                   required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">CUIL (solo números)</label>
+                <input
+                  type="text"
+                  className="input"
+                  value={form.cuil}
+                  onChange={(e) => setForm({ ...form, cuil: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+                  placeholder="Sin espacios, solo números"
+                  maxLength={11}
                 />
               </div>
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
@@ -347,7 +404,8 @@ export default function ClientsPage() {
               <th>Nombre</th>
               <th>Teléfono</th>
               <th>DNI</th>
-              <th>Creado por</th>
+              <th>CUIL</th>
+              <th>Estado BCRA</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -381,8 +439,37 @@ export default function ClientsPage() {
                       {client.dni_front ? 'Ver DNI' : 'Sin DNI'}
                     </button>
                   </td>
-                  <td data-label="Creado por">
-                    {client.creator_name ? `${client.creator_name} ${client.creator_lastname}` : '-'}
+                  <td data-label="CUIL">{client.cuil || '-'}</td>
+                  <td data-label="Estado BCRA">
+                    {client.bcra_status ? (
+                      <span style={{
+                        padding: '0.2rem 0.4rem',
+                        borderRadius: '3px',
+                        fontSize: '0.65rem',
+                        background: client.bcra_status === 'Normal' ? '#dcfce7' : client.bcra_status === 'Seguimiento especial' ? '#fef9c3' : '#fee2e2',
+                        color: client.bcra_status === 'Normal' ? '#16a34a' : client.bcra_status === 'Seguimiento especial' ? '#ca8a04' : '#dc2626',
+                      }}>
+                        {client.bcra_status}
+                      </span>
+                    ) : client.cuil ? (
+                      <button
+                        onClick={() => handleConsultBcra(client.id)}
+                        disabled={consultingBcra === client.id}
+                        style={{
+                          background: consultingBcra === client.id ? 'var(--text-secondary)' : 'var(--primary)',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.2rem 0.4rem',
+                          borderRadius: 'var(--radius)',
+                          cursor: consultingBcra === client.id ? 'wait' : 'pointer',
+                          fontSize: '0.65rem'
+                        }}
+                      >
+                        {consultingBcra === client.id ? 'Consultando...' : 'Consultar'}
+                      </button>
+                    ) : (
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Sin CUIL</span>
+                    )}
                   </td>
                   <td data-label="Acciones">
                     <button onClick={() => handleEdit(client)} className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}>

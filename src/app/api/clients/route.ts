@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Error: formato de datos inválido' }, { status: 400 });
     }
     
-    const { name, phone, address, dni_front, dni_back } = body;
+    const { name, phone, address, dni_front, dni_back, cuil } = body;
 
     if (!name || !phone) {
       return NextResponse.json({ message: 'Nombre y teléfono son requeridos' }, { status: 400 });
@@ -85,9 +85,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Las imágenes son muy grandes. Por favor use fotos más pequeñas (máx 5MB)' }, { status: 413 });
     }
 
+    let cleanCuil = null;
+    if (cuil) {
+      cleanCuil = cuil.replace(/\s/g, '').replace(/\D/g, '');
+      if (cleanCuil && (cleanCuil.length < 8 || cleanCuil.length > 11)) {
+        return NextResponse.json({ message: 'El CUIL debe tener entre 8 y 11 dígitos' }, { status: 400 });
+      }
+    }
+
     const result = await run(
-      'INSERT INTO clients (name, phone, address, dni_front, dni_back, created_by) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, phone, address || null, dni_front || null, dni_back || null, decoded.id]
+      'INSERT INTO clients (name, phone, address, dni_front, dni_back, cuil, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, phone, address || null, dni_front || null, dni_back || null, cleanCuil, decoded.id]
     );
 
     const client = await get(`

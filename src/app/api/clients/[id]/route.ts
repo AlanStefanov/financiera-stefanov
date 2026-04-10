@@ -28,9 +28,9 @@ export async function PUT(
     const { id } = await params;
     await getDB();
     const body = await request.json();
-    const { name, phone, address, dni_front, dni_back } = body;
+    const { name, phone, address, dni_front, dni_back, bcra_status, cuil } = body;
 
-    if (!name && !phone && !address && !dni_front && !dni_back) {
+    if (!name && !phone && !address && !dni_front && !dni_back && !bcra_status && !cuil) {
       return NextResponse.json({ message: 'Se requiere al menos un campo para actualizar' }, { status: 400 });
     }
 
@@ -58,6 +58,20 @@ export async function PUT(
       updates.push('dni_back = ?');
       values.push(dni_back);
     }
+    if (bcra_status !== undefined) {
+      updates.push('bcra_status = ?');
+      values.push(bcra_status || null);
+      updates.push('bcra_updated_at = ?');
+      values.push(now.toISOString());
+    }
+    if (cuil !== undefined) {
+      const cleanCuil = cuil.replace(/\s/g, '').replace(/\D/g, '');
+      if (cleanCuil && (cleanCuil.length < 8 || cleanCuil.length > 11)) {
+        return NextResponse.json({ message: 'El CUIL debe tener entre 8 y 11 dígitos' }, { status: 400 });
+      }
+      updates.push('cuil = ?');
+      values.push(cleanCuil || null);
+    }
     updates.push('updated_at = ?');
     values.push(now.toISOString());
     values.push(parseInt(id));
@@ -74,8 +88,9 @@ export async function PUT(
       message: 'Cliente actualizado exitosamente',
       client
     });
-  } catch (error) {
-    return NextResponse.json({ error: 'Error updating client' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Error updating client:', error);
+    return NextResponse.json({ error: 'Error updating client: ' + error.message }, { status: 500 });
   }
 }
 
