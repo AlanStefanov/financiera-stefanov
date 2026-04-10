@@ -64,6 +64,15 @@ export default function LoansPage() {
   const today = new Date().toISOString().split('T')[0];
   const [formData, setFormData] = useState({ client_id: '', loan_type_id: '', principal_amount: '', start_date: today });
   const [partialPayment, setPartialPayment] = useState<{ payment: LoanPayment; amount: string } | null>(null);
+  const [expandedLoanId, setExpandedLoanId] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -134,7 +143,25 @@ export default function LoansPage() {
   };
 
   const handleViewPayments = async (loan: Loan) => {
-    try {
+    if (isMobile) {
+      if (expandedLoanId === loan.id) {
+        setExpandedLoanId(null);
+      } else {
+        setExpandedLoanId(loan.id);
+        const token = localStorage.getItem('token');
+        const res = await fetch(`/api/loans/${loan.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSelectedLoan(data.loan);
+          setLoanPayments(data.payments);
+          setTimeout(() => {
+            document.getElementById('mobile-payments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 100);
+        }
+      }
+    } else {
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/loans/${loan.id}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -144,8 +171,6 @@ export default function LoansPage() {
         setSelectedLoan(data.loan);
         setLoanPayments(data.payments);
       }
-    } catch (error) {
-      console.error('Error fetching loan payments:', error);
     }
   };
 
@@ -525,18 +550,71 @@ export default function LoansPage() {
         </table>
       </div>
 
-      {selectedLoan && (
-        <div style={{ marginTop: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <h2 style={{ fontSize: '1.25rem' }}>Cuotas del Préstamo #{selectedLoan.id}</h2>
-            <button onClick={() => setSelectedLoan(null)} className="btn btn-primary">Cerrar</button>
+      {isMobile && expandedLoanId && selectedLoan && (
+        <div id="mobile-payments" className="card" style={{ marginTop: '1rem', border: '2px solid var(--primary)', position: 'sticky', top: '0', zIndex: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '1rem', margin: 0 }}>Cuotas - Préstamo #{selectedLoan.id}</h3>
+            <button onClick={() => setExpandedLoanId(null)} className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem' }}>✕</button>
           </div>
+          <p style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}><strong>{selectedLoan.client_name}</strong> - ${selectedLoan.principal_amount.toFixed(2)}</p>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="table" style={{ fontSize: '0.75rem' }}>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Monto</th>
+                  <th>Fecha</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loanPayments.map((payment) => (
+                  <tr key={payment.id}>
+                    <td>{payment.payment_number}</td>
+                    <td>${payment.amount.toFixed(2)}</td>
+                    <td>{new Date(payment.due_date).toLocaleDateString('es-AR')}</td>
+                    <td>
+                      <span style={{ 
+                        padding: '0.125rem 0.25rem', 
+                        borderRadius: '3px', 
+                        background: payment.is_paid ? '#dcfce7' : '#fee2e2',
+                        color: payment.is_paid ? '#16a34a' : '#dc2626',
+                        fontSize: '0.625rem'
+                      }}>
+                        {payment.is_paid ? 'Pagado' : 'Pendiente'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {!isMobile && selectedLoan && (
+        <div 
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1000, padding: '1rem'
+          }}
+          onClick={() => setSelectedLoan(null)}
+        >
+          <div 
+            className="card" 
+            style={{ maxWidth: '600px', width: '100%', maxHeight: '80vh', overflow: 'auto' }} 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h2 style={{ fontSize: '1.25rem' }}>Cuotas del Préstamo #{selectedLoan.id}</h2>
+              <button onClick={() => setSelectedLoan(null)} className="btn btn-primary">✕</button>
+            </div>
           <div className="card" style={{ fontSize: '0.875rem' }}>
             <p><strong>Cliente:</strong> {selectedLoan.client_name}</p>
             <p><strong>Monto:</strong> ${selectedLoan.principal_amount.toFixed(2)} | <strong>Total:</strong> ${selectedLoan.total_amount.toFixed(2)}</p>
             <p><strong>Tipo:</strong> {selectedLoan.loan_type_name}</p>
           </div>
-          <div className="card" style={{ marginTop: '1rem', overflowX: 'auto' }}>
             <table className="table table-mobile-card">
               <thead>
                 <tr>
