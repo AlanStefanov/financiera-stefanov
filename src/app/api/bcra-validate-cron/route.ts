@@ -75,6 +75,7 @@ async function handleValidation() {
   });
 
   const clientes = result.rows as unknown as { id: number; name: string; cuil: string }[];
+  const total = clientes.length;
   
   const results: any[] = [];
 

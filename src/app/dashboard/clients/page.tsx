@@ -482,7 +482,7 @@ export default function ClientsPage() {
                   </td>
                   <td data-label="CUIL">{client.cuil || '-'}</td>
                   <td data-label="Estado BCRA">
-                    {client.bcra_status ? (
+                    {client.bcra_status && !['api_fail', 'no_data', 'Sin deuda', 'error'].includes(client.bcra_status) ? (
                       <span style={{
                         padding: '0.2rem 0.4rem',
                         borderRadius: '3px',
@@ -493,21 +493,26 @@ export default function ClientsPage() {
                         {client.bcra_status}
                       </span>
                     ) : client.cuil ? (
-                      <button
-                        onClick={() => handleConsultBcra(client.id)}
-                        disabled={consultingBcra === client.id}
-                        style={{
-                          background: consultingBcra === client.id ? 'var(--text-secondary)' : 'var(--primary)',
-                          color: 'white',
-                          border: 'none',
-                          padding: '0.2rem 0.4rem',
-                          borderRadius: 'var(--radius)',
-                          cursor: consultingBcra === client.id ? 'wait' : 'pointer',
-                          fontSize: '0.65rem'
-                        }}
-                      >
-                        {consultingBcra === client.id ? 'Consultando...' : 'Consultar'}
-                      </button>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-start' }}>
+                        {client.bcra_status && (
+                          <span style={{ fontSize: '0.55rem', color: 'var(--text-secondary)' }}>{client.bcra_status}</span>
+                        )}
+                        <button
+                          onClick={() => handleConsultBcra(client.id)}
+                          disabled={consultingBcra === client.id}
+                          style={{
+                            background: consultingBcra === client.id ? 'var(--text-secondary)' : 'var(--primary)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.2rem 0.4rem',
+                            borderRadius: 'var(--radius)',
+                            cursor: consultingBcra === client.id ? 'wait' : 'pointer',
+                            fontSize: '0.65rem'
+                          }}
+                        >
+                          {consultingBcra === client.id ? 'Consultando...' : 'Consultar'}
+                        </button>
+                      </div>
                     ) : (
                       <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Sin CUIL</span>
                     )}
