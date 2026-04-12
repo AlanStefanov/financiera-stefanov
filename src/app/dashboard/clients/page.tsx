@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import Image from 'next/image';
+import NextImage from 'next/image';
 
 interface Client {
   id: number;
@@ -65,7 +65,7 @@ export default function ClientsPage() {
 
   const compressImage = (base64Data: string, maxSizeKB: number = 512): Promise<string> => {
     return new Promise((resolve) => {
-      const img = new Image();
+      const img = document.createElement('img');
       img.onload = () => {
         const canvas = document.createElement('canvas');
         let width = img.width;
@@ -401,7 +401,7 @@ export default function ClientsPage() {
                 />
                 {form.dni_front && (
                   <div style={{ marginTop: '0.5rem' }}>
-                    <Image src={form.dni_front} alt="DNI frente" width={150} height={100} style={{ objectFit: 'cover', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} unoptimized />
+                    <NextImage src={form.dni_front} alt="DNI frente" width={150} height={100} style={{ objectFit: 'cover', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} unoptimized />
                   </div>
                 )}
               </div>
@@ -416,7 +416,7 @@ export default function ClientsPage() {
                 />
                 {form.dni_back && (
                   <div style={{ marginTop: '0.5rem' }}>
-                    <Image src={form.dni_back} alt="DNI dorso" width={150} height={100} style={{ objectFit: 'cover', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} unoptimized />
+                    <NextImage src={form.dni_back} alt="DNI dorso" width={150} height={100} style={{ objectFit: 'cover', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} unoptimized />
                   </div>
                 )}
               </div>
@@ -559,7 +559,7 @@ export default function ClientsPage() {
               <div>
                 <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>Frente</p>
                 {selectedClient.dni_front ? (
-                  <Image src={selectedClient.dni_front} alt="DNI frente" width={300} height={200} style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} unoptimized />
+                  <NextImage src={selectedClient.dni_front} alt="DNI frente" width={300} height={200} style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} unoptimized />
                 ) : (
                   <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--background)', borderRadius: 'var(--radius)', color: 'var(--text-secondary)' }}>Sin imagen</div>
                 )}
@@ -567,7 +567,7 @@ export default function ClientsPage() {
               <div>
                 <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>Dorso</p>
                 {selectedClient.dni_back ? (
-                  <Image src={selectedClient.dni_back} alt="DNI dorso" width={300} height={200} style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} unoptimized />
+                  <NextImage src={selectedClient.dni_back} alt="DNI dorso" width={300} height={200} style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} unoptimized />
                 ) : (
                   <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--background)', borderRadius: 'var(--radius)', color: 'var(--text-secondary)' }}>Sin imagen</div>
                 )}
