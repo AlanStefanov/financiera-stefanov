@@ -82,11 +82,11 @@ async function handleValidation() {
     const bcraResult = await fetchBcra(c.cuil);
     const nombreBcra = bcraResult.success ? bcraResult.data?.results?.denominacion || '' : '';
     
-    let status = 'error';
+    let status = null;
     if (!bcraResult.success) {
-      status = 'api_fail';
+      continue;
     } else if (!nombreBcra) {
-      status = 'no_data';
+      status = 'Sin deuda';
     } else {
       const localNorm = normalizar(c.name);
       const bcraNorm = normalizar(nombreBcra);
@@ -103,12 +103,16 @@ async function handleValidation() {
 
   const matchCount = results.filter(r => r.status === 'match').length;
   const mismatchCount = results.filter(r => r.status === 'mismatch').length;
+  const sinDeudaCount = results.filter(r => r.status === 'Sin deuda').length;
+  const skippedCount = total - results.length;
 
   return NextResponse.json({ 
     message: 'BCRA validation completed',
-    total: results.length,
+    total,
     matches: matchCount,
     mismatches: mismatchCount,
+    sinDeuda: sinDeudaCount,
+    skipped: skippedCount,
     results
   });
 }
