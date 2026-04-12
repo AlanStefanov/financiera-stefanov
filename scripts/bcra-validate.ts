@@ -57,7 +57,7 @@ async function validarClientes() {
     sql: "SELECT id, name, cuil FROM clients WHERE cuil IS NOT NULL AND cuil != ''",
   });
 
-  const clientes = result.rows as { id: number; name: string; cuil: string }[];
+  const clientes = result.rows as unknown as { id: number; name: string; cuil: string }[];
   
   console.log(`ID   | Estado          | Nombre Local                    | Nombre BCRA`);
   console.log('─'.repeat(90));
