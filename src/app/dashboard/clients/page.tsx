@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import Image from 'next/image';
 
 interface Client {
   id: number;
@@ -118,7 +119,7 @@ export default function ClientsPage() {
       const token = localStorage.getItem('token');
       
       if (editingClient) {
-        const updateData: any = { name: form.name, phone: form.phone, address: form.address, cuil: form.cuil };
+        const updateData: Partial<Client> = { name: form.name, phone: form.phone, address: form.address, cuil: form.cuil };
         if (form.dni_front) updateData.dni_front = form.dni_front;
         if (form.dni_back) updateData.dni_back = form.dni_back;
         
@@ -400,7 +401,7 @@ export default function ClientsPage() {
                 />
                 {form.dni_front && (
                   <div style={{ marginTop: '0.5rem' }}>
-                    <img src={form.dni_front} alt="DNI frente" style={{ width: '150px', height: '100px', objectFit: 'cover', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
+                    <Image src={form.dni_front} alt="DNI frente" width={150} height={100} style={{ objectFit: 'cover', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} unoptimized />
                   </div>
                 )}
               </div>
@@ -415,7 +416,7 @@ export default function ClientsPage() {
                 />
                 {form.dni_back && (
                   <div style={{ marginTop: '0.5rem' }}>
-                    <img src={form.dni_back} alt="DNI dorso" style={{ width: '150px', height: '100px', objectFit: 'cover', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
+                    <Image src={form.dni_back} alt="DNI dorso" width={150} height={100} style={{ objectFit: 'cover', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} unoptimized />
                   </div>
                 )}
               </div>
@@ -518,16 +519,16 @@ export default function ClientsPage() {
                     )}
                   </td>
                   <td data-label="Acciones">
-                    <div style={{ display: 'flex', gap: '0.25rem' }}>
-                      <button onClick={() => handleEdit(client)} title="Editar" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem', fontSize: '1rem' }}>
+                    <div className="table-actions">
+                      <button onClick={() => handleEdit(client)} className="icon-action-button" title="Editar" aria-label="Editar">
                         ✏️
                       </button>
                       {user.role === 'admin' && (
                         <>
-                          <button onClick={() => handleDelete(client.id)} title="Eliminar" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem', fontSize: '1rem' }}>
+                          <button onClick={() => handleDelete(client.id)} className="icon-action-button danger" title="Eliminar" aria-label="Eliminar">
                             🗑️
                           </button>
-                          <button onClick={() => handleToggleActive(client.id, client.is_active || 1)} title={client.is_active === 0 ? 'Activar' : 'Desactivar'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem', fontSize: '1rem' }}>
+                          <button onClick={() => handleToggleActive(client.id, client.is_active || 1)} className="icon-action-button secondary" title={client.is_active === 0 ? 'Activar' : 'Desactivar'} aria-label={client.is_active === 0 ? 'Activar' : 'Desactivar'}>
                             {client.is_active === 0 ? '✅' : '❌'}
                           </button>
                         </>
@@ -558,7 +559,7 @@ export default function ClientsPage() {
               <div>
                 <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>Frente</p>
                 {selectedClient.dni_front ? (
-                  <img src={selectedClient.dni_front} alt="DNI frente" style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
+                  <Image src={selectedClient.dni_front} alt="DNI frente" width={300} height={200} style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} unoptimized />
                 ) : (
                   <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--background)', borderRadius: 'var(--radius)', color: 'var(--text-secondary)' }}>Sin imagen</div>
                 )}
@@ -566,7 +567,7 @@ export default function ClientsPage() {
               <div>
                 <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>Dorso</p>
                 {selectedClient.dni_back ? (
-                  <img src={selectedClient.dni_back} alt="DNI dorso" style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
+                  <Image src={selectedClient.dni_back} alt="DNI dorso" width={300} height={200} style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} unoptimized />
                 ) : (
                   <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--background)', borderRadius: 'var(--radius)', color: 'var(--text-secondary)' }}>Sin imagen</div>
                 )}

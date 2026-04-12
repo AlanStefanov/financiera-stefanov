@@ -265,6 +265,46 @@ body {
   margin-top: 1.25rem;
 }
 
+.table-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.icon-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  padding: 0.35rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+  font-size: 1rem;
+}
+
+.icon-action-button:hover {
+  background: rgba(37, 99, 235, 0.08);
+  transform: translateY(-1px);
+}
+
+.icon-action-button.primary {
+  color: var(--primary);
+}
+
+.icon-action-button.secondary {
+  color: var(--secondary);
+}
+
+.icon-action-button.danger {
+  color: var(--danger);
+}
+
 .badge {
   display: inline-flex;
   padding: 0.25rem 0.625rem;
