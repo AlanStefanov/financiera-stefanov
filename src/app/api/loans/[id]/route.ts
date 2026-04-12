@@ -139,15 +139,14 @@ export async function PUT(
           const numPayments = loanType.modality === 'daily' ? 20 : 4;
           const paymentAmount = (currentLoan?.total_amount as number) / numPayments;
           
-          let startDateStr = (currentLoan?.start_date as string).split('T')[0];
-          let currentDate = new Date(startDateStr + 'T12:00:00');
+          let currentDate = new Date();
+          currentDate.setDate(currentDate.getDate() + 1);
           
           if (loanType.modality === 'weekly') {
             while (currentDate.getDay() !== 5) {
               currentDate.setDate(currentDate.getDate() + 1);
             }
           } else {
-            currentDate.setDate(currentDate.getDate() + 1);
             while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
               currentDate.setDate(currentDate.getDate() + 1);
             }

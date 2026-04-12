@@ -114,6 +114,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Faltan campos requeridos' }, { status: 400 });
     }
 
+    if (principal_amount > 500000) {
+      return NextResponse.json({ message: 'El monto máximo del préstamo es $500.000' }, { status: 400 });
+    }
+
+    const client = await get('SELECT id, credit_limit FROM clients WHERE id = ?', [client_id]);
+    if (!client) {
+      return NextResponse.json({ message: 'Cliente no encontrado' }, { status: 404 });
+    }
+
+    const creditLimit = (client.credit_limit || 500000) as number;
+    if (principal_amount > creditLimit) {
+      return NextResponse.json({ message: `El monto supera el límite de crédito del cliente ($${creditLimit.toLocaleString()})` }, { status: 400 });
+    }
+
     const loanType = await get('SELECT * FROM loan_types WHERE id = ? AND is_active = 1', [loan_type_id]);
     if (!loanType) {
       return NextResponse.json({ message: 'Tipo de préstamo no encontrado o inactivo' }, { status: 404 });
@@ -150,12 +164,15 @@ export async function POST(request: NextRequest) {
     const paymentAmount = totalAmount / numPayments;
 
     let currentDate = new Date(start);
+    currentDate.setDate(currentDate.getDate() + 1);
     if (loanType.modality === 'weekly') {
       while (currentDate.getDay() !== 5) {
         currentDate.setDate(currentDate.getDate() + 1);
       }
     } else if (loanType.modality === 'daily') {
-      currentDate = getNextBusinessDay(start);
+      while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
     }
 
     for (let i = 0; i < numPayments; i++) {
