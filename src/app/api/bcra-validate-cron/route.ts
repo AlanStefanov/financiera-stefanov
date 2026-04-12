@@ -84,35 +84,40 @@ async function handleValidation() {
     const nombreBcra = bcraResult.success ? bcraResult.data?.results?.denominacion || '' : '';
     
     let status = null;
+    let shouldUpdate = false;
+    
     if (!bcraResult.success) {
       continue;
     } else if (!nombreBcra) {
-      status = 'Sin deuda';
+      continue;
     } else {
       const localNorm = normalizar(c.name);
       const bcraNorm = normalizar(nombreBcra);
-      status = localNorm.includes(bcraNorm) || bcraNorm.includes(localNorm) ? 'match' : 'mismatch';
+      if (localNorm.includes(bcraNorm) || bcraNorm.includes(localNorm)) {
+        status = 'match';
+        shouldUpdate = true;
+      } else {
+        continue;
+      }
     }
 
     results.push({ id: c.id, name: c.name, cuil: c.cuil, bcra_name: nombreBcra, status });
 
-    await client.execute({
-      sql: "UPDATE clients SET bcra_status = ?, bcra_updated_at = datetime('now') WHERE id = ?",
-      args: [status, c.id]
-    });
+    if (shouldUpdate) {
+      await client.execute({
+        sql: "UPDATE clients SET bcra_status = ?, bcra_updated_at = datetime('now') WHERE id = ?",
+        args: [status, c.id]
+      });
+    }
   }
 
   const matchCount = results.filter(r => r.status === 'match').length;
-  const mismatchCount = results.filter(r => r.status === 'mismatch').length;
-  const sinDeudaCount = results.filter(r => r.status === 'Sin deuda').length;
   const skippedCount = total - results.length;
 
   return NextResponse.json({ 
     message: 'BCRA validation completed',
     total,
     matches: matchCount,
-    mismatches: mismatchCount,
-    sinDeuda: sinDeudaCount,
     skipped: skippedCount,
     results
   });
