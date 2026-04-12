@@ -419,7 +419,15 @@ export default function ClientsPage() {
                 <tr key={client.id}>
                   <td data-label="ID">{client.id}</td>
                   <td data-label="Nombre">
-                    <div style={{ fontWeight: 500 }}>{client.name}</div>
+                    <button
+                      onClick={() => window.location.href = `/dashboard/clients/${client.id}`}
+                      style={{
+                        background: 'none', border: 'none', color: 'inherit', cursor: 'pointer',
+                        textAlign: 'left', fontWeight: 500, padding: 0, font: 'inherit'
+                      }}
+                    >
+                      {client.name}
+                    </button>
                     {client.address && <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>{client.address}</div>}
                   </td>
                   <td data-label="Teléfono">{client.phone}</td>
@@ -472,19 +480,21 @@ export default function ClientsPage() {
                     )}
                   </td>
                   <td data-label="Acciones">
-                    <button onClick={() => handleEdit(client)} className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}>
-                      Editar
-                    </button>
-                    {user.role === 'admin' && (
-                      <>
-                        <button onClick={() => handleDelete(client.id)} className="btn btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}>
-                          Eliminar
-                        </button>
-                        <button onClick={() => handleToggleActive(client.id, client.is_active || 1)} className="btn btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}>
-                          {client.is_active === 0 ? 'Activar' : 'Desactivar'}
-                        </button>
-                      </>
-                    )}
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button onClick={() => handleEdit(client)} title="Editar" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem', fontSize: '1rem' }}>
+                        ✏️
+                      </button>
+                      {user.role === 'admin' && (
+                        <>
+                          <button onClick={() => handleDelete(client.id)} title="Eliminar" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem', fontSize: '1rem' }}>
+                            🗑️
+                          </button>
+                          <button onClick={() => handleToggleActive(client.id, client.is_active || 1)} title={client.is_active === 0 ? 'Activar' : 'Desactivar'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem', fontSize: '1rem' }}>
+                            {client.is_active === 0 ? '✅' : '❌'}
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))
