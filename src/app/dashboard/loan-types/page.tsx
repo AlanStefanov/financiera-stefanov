@@ -232,27 +232,32 @@ export default function LoanTypesPage() {
                     </span>
                   </td>
                   <td data-label="Acciones">
-                    <button
-                      onClick={() => handleEdit(lt)}
-                      className="btn btn-secondary"
-                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => handleToggleActive(lt.id, lt.is_active)}
-                      className="btn btn-primary"
-                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
-                    >
-                      {lt.is_active ? 'Desactivar' : 'Activar'}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(lt.id)}
-                      className="btn btn-danger"
-                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
-                    >
-                      Eliminar
-                    </button>
+                    <div className="table-actions">
+                      <button
+                        onClick={() => handleEdit(lt)}
+                        className="icon-action-button secondary"
+                        title="Editar"
+                        aria-label="Editar"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleToggleActive(lt.id, lt.is_active)}
+                        className="icon-action-button primary"
+                        title={lt.is_active ? 'Desactivar' : 'Activar'}
+                        aria-label={lt.is_active ? 'Desactivar' : 'Activar'}
+                      >
+                        {lt.is_active ? '❌' : '✅'}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(lt.id)}
+                        className="icon-action-button danger"
+                        title="Eliminar"
+                        aria-label="Eliminar"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

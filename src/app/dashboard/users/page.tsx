@@ -266,20 +266,24 @@ export default function UsersPage() {
                     </span>
                   </td>
                   <td data-label="Acciones">
-                    <button
-                      onClick={() => handleEdit(user)}
-                      className="btn btn-primary"
-                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => handleDelete(user.id)}
-                      className="btn btn-danger"
-                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
-                    >
-                      Eliminar
-                    </button>
+                    <div className="table-actions">
+                      <button
+                        onClick={() => handleEdit(user)}
+                        className="icon-action-button"
+                        title="Editar"
+                        aria-label="Editar"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDelete(user.id)}
+                        className="icon-action-button danger"
+                        title="Eliminar"
+                        aria-label="Eliminar"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

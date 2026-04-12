@@ -56,7 +56,6 @@ export default function LoansPage() {
   const [loanTypes, setLoanTypes] = useState<LoanType[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [submitMessage, setSubmitMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [loanPayments, setLoanPayments] = useState<LoanPayment[]>([]);
@@ -447,7 +446,7 @@ export default function LoansPage() {
                     <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitting}>
                       {submitting ? 'Generando...' : 'Crear Préstamo'}
                     </button>
-                    <button type="button" className="btn btn-secondary" onClick={() => { setShowForm(false); setSubmitMessage(null); }}>
+                    <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>
                       Cancelar
                     </button>
                   </div>
@@ -513,41 +512,46 @@ export default function LoansPage() {
                       </span>
                     </td>
                     <td data-label="Acciones">
+                      <div className="table-actions">
                       <button
                         onClick={() => handleViewPayments(loan)}
-                        className="btn btn-primary"
-                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
+                        className="icon-action-button"
+                        title="Ver cuotas"
+                        aria-label="Ver cuotas"
                       >
-                        Ver Cuotas
+                        👁️
                       </button>
                       {user.role === 'admin' && (
                         <>
                           {loan.status !== 'finalizado' && (
                             <button
                               onClick={() => handleUpdateStatus(loan.id, loan.status === 'orden' ? 'aprobado' : 'finalizado')}
-                              className="btn btn-primary"
-                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
+                              className="icon-action-button primary"
+                              title={loan.status === 'orden' ? 'Aprobar' : 'Finalizar'}
+                              aria-label={loan.status === 'orden' ? 'Aprobar' : 'Finalizar'}
                             >
-                              {loan.status === 'orden' ? 'Aprobar' : 'Finalizar'}
+                              {loan.status === 'orden' ? '✅' : '🏁'}
                             </button>
                           )}
                           <button
                             onClick={() => handleRegeneratePayments(loan.id)}
-                            className="btn btn-secondary"
-                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
+                            className="icon-action-button secondary"
                             title="Regenerar cuotas"
+                            aria-label="Regenerar cuotas"
                           >
                             ↻
                           </button>
                           <button
                             onClick={() => handleDeleteLoan(loan.id)}
-                            className="btn btn-danger"
-                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
+                            className="icon-action-button danger"
+                            title="Eliminar"
+                            aria-label="Eliminar"
                           >
-                            Eliminar
+                            🗑️
                           </button>
                         </>
                       )}
+                    </div>
                     </td>
                   </tr>
                 );
