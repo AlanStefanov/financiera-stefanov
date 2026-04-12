@@ -83,6 +83,7 @@ export const initializeDatabase = async () => {
       bcra_status TEXT,
       bcra_updated_at DATETIME,
       cuil TEXT,
+      credit_limit REAL DEFAULT 500000,
       created_by INTEGER,
       is_active INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -157,6 +158,9 @@ export const initializeDatabase = async () => {
     } catch (e) { /* ignore if exists */ }
     try {
       await getClient().execute('ALTER TABLE clients ADD COLUMN cuil TEXT');
+    } catch (e) { /* ignore if exists */ }
+    try {
+      await getClient().execute('ALTER TABLE clients ADD COLUMN credit_limit REAL DEFAULT 500000');
     } catch (e) { /* ignore if exists */ }
     console.log('Base de datos Turso inicializada correctamente');
     return;

@@ -10,6 +10,7 @@ interface Stats {
   totalCollected: number;
   remainingToCollect: number;
   pendingLoans: number;
+  overduePayments: number;
 }
 
 interface LoanType {
@@ -22,10 +23,11 @@ interface LoanType {
 
 interface User {
   role: string;
+  id?: number;
 }
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<Stats>({ totalClients: 0, activeLoans: 0, remainingPayments: 0, totalLoaned: 0, totalCollected: 0, remainingToCollect: 0, pendingLoans: 0 });
+  const [stats, setStats] = useState<Stats>({ totalClients: 0, activeLoans: 0, remainingPayments: 0, totalLoaned: 0, totalCollected: 0, remainingToCollect: 0, pendingLoans: 0, overduePayments: 0 });
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User>({ role: 'operator' });
   const [loanTypes, setLoanTypes] = useState<LoanType[]>([]);
@@ -57,17 +59,24 @@ export default function DashboardPage() {
         const payments = paymentsRes.ok ? await paymentsRes.json() : [];
 
         const activeAndApprovedLoans = Array.isArray(loans) 
-          ? loans.filter((l: any) => l.status === 'active' || l.status === 'aprobado') 
+          ? loans.filter((l: any) => l.status === 'aprobado') 
           : [];
         
-        const totalLoaned = activeAndApprovedLoans.reduce((sum: number, l: any) => {
+        const activeLoansCount = activeAndApprovedLoans.length;
+        
+        const overduePayments = Array.isArray(payments) 
+          ? payments.filter((p: any) => !p.is_paid && new Date(p.due_date) < new Date() && 
+            loans.some((l: any) => l.id === p.loan_id && l.status === 'aprobado')).length
+          : 0;
+        
+        const totalLoanedSum = activeAndApprovedLoans.reduce((sum: number, l: any) => {
           const principal = parseFloat(l.principal_amount) || 0;
           return sum + principal;
         }, 0);
         
-        let totalCollected = 0;
-        let totalToCollect = 0;
-        let remainingPayments = 0;
+        let totalCollectedSum = 0;
+        let totalToCollectSum = 0;
+        let remainingPaymentsCount = 0;
 
         for (const loan of activeAndApprovedLoans) {
           const loanId = loan.id;
@@ -81,24 +90,24 @@ export default function DashboardPage() {
             return s + (parseFloat(p.paid_amount) || 0);
           }, 0);
           
-          totalCollected += paidAmount;
-          totalToCollect += Math.max(0, loanTotal - paidAmount);
+          totalCollectedSum += paidAmount;
+          totalToCollectSum += Math.max(0, loanTotal - paidAmount);
           
           const remaining = loanPayments.filter((p: any) => !p.is_paid && (p.paid_amount || 0) === 0).length;
-          remainingPayments += remaining;
+          remainingPaymentsCount += remaining;
         }
 
-        const activeLoans = activeAndApprovedLoans.length;
-        const pendingLoans = Array.isArray(loans) ? loans.filter((l: any) => l.status === 'orden').length : 0;
+        const pendingLoansCount = Array.isArray(loans) ? loans.filter((l: any) => l.status === 'orden').length : 0;
 
         setStats({
           totalClients: Array.isArray(clients) ? clients.length : 0,
-          activeLoans,
-          remainingPayments,
-          totalLoaned,
-          totalCollected,
-          remainingToCollect: totalToCollect,
-          pendingLoans,
+          activeLoans: activeLoansCount,
+          remainingPayments: remainingPaymentsCount,
+          totalLoaned: totalLoanedSum,
+          totalCollected: totalCollectedSum,
+          remainingToCollect: totalToCollectSum,
+          pendingLoans: pendingLoansCount,
+          overduePayments,
         });
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -123,10 +132,6 @@ export default function DashboardPage() {
     };
     fetchLoanTypes();
   }, []);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
-  };
 
   const calculateLoan = () => {
     const amount = parseFloat(calcAmount);
@@ -204,6 +209,14 @@ export default function DashboardPage() {
           <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Pagos Restantes</h3>
           <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>{stats.remainingPayments}</p>
         </div>
+
+        {user.role !== 'admin' && stats.overduePayments > 0 && (
+          <div className="card" style={{ border: '2px solid var(--danger)', background: '#fef2f2' }}>
+            <h3 style={{ color: 'var(--danger)', fontSize: '0.875rem' }}>⚠️ Pagos Atrasados</h3>
+            <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--danger)' }}>{stats.overduePayments}</p>
+            <a href="/dashboard/loans" style={{ fontSize: '0.75rem', color: 'var(--danger)' }}>Ver detalles →</a>
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ marginTop: '1.5rem' }}>
@@ -282,6 +295,67 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {user.role !== 'admin' && (
+        <EarningsCard userId={user.id} />
+      )}
     </div>
   );
 }
+
+function EarningsCard({ userId }: { userId?: number }) {
+  const [earnings, setEarnings] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEarnings = async () => {
+      if (!userId) return;
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/earnings', { headers: { Authorization: `Bearer ${token}` } });
+        if (res.ok) {
+          const data = await res.json();
+          setEarnings(data);
+        }
+      } catch (error) {
+        console.error('Error fetching earnings:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEarnings();
+  }, [userId]);
+
+  if (loading) return <div>Cargando...</div>;
+  if (!earnings?.summary) return null;
+
+  const { summary } = earnings;
+
+  return (
+    <div className="card" style={{ marginTop: '1.5rem', border: '2px solid var(--primary)' }}>
+      <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--primary)' }}>💰 Tus Ganancias</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+        <div>
+          <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Préstamos Realizados</h3>
+          <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{summary.total_loans}</p>
+        </div>
+        <div>
+          <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Total Prestado</h3>
+          <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatCurrency(summary.total_principal)}</p>
+        </div>
+        <div>
+          <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Ganancia Potencial (50%)</h3>
+          <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--success)' }}>{formatCurrency(summary.potential_earnings)}</p>
+        </div>
+        <div>
+          <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Ganancia Real (préstamos finalizados)</h3>
+          <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>{formatCurrency(summary.actual_earnings)}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
+};

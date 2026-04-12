@@ -221,6 +221,13 @@ export default function LoansPage() {
     }
   };
 
+  const handleSendOverdueReminder = (payment: LoanPayment, clientName: string, clientPhone: string) => {
+    const phone = clientPhone.replace(/\D/g, '');
+    const daysOverdue = Math.ceil((new Date().getTime() - new Date(payment.due_date).getTime()) / (1000 * 60 * 60 * 24));
+    const message = `Hola ${clientName}, te recordamo$ que tienes una cuota atrasada de $${payment.amount.toLocaleString('es-AR')} que venció el ${new Date(payment.due_date).toLocaleDateString('es-AR')}. \n\nLlevas ${daysOverdue} día${daysOverdue > 1 ? 's' : ''} de atraso. Por favor comunicate con nosotros para regularizar tu situación.\n\nTu operador de créditos te espera para ayudarte.`;
+    window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
+  };
+
   const handleUpdateStatus = async (loanId: number, newStatus: string) => {
     const loan = loans.find(l => l.id === loanId);
     
@@ -651,6 +658,16 @@ export default function LoansPage() {
                         </span>
                       </td>
                       <td data-label="Acciones" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {!payment.is_paid && new Date(payment.due_date) < new Date() && user.role !== 'admin' && selectedLoan && (
+                          <button
+                            onClick={() => handleSendOverdueReminder(payment, selectedLoan.client_name, selectedLoan.client_phone)}
+                            className="btn"
+                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: '#fbbf24', color: '#000' }}
+                            title="Enviar recordatorio por WhatsApp"
+                          >
+                            📣
+                          </button>
+                        )}
                         {!payment.is_paid && (
                           <>
                             <button
