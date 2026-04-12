@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/bcra-validate-cron",
+      "schedule": "0 10 1 * *"
+    }
+  ]
+}

@@ -33,6 +33,7 @@ export default function ClientsPage() {
   const [form, setForm] = useState({ name: '', phone: '', address: '', dni_front: '', dni_back: '', cuil: '' });
   const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [consultingBcra, setConsultingBcra] = useState<number | null>(null);
+  const [consultingMassive, setConsultingMassive] = useState(false);
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
 
@@ -255,6 +256,26 @@ export default function ClientsPage() {
     }
   };
 
+  const handleConsultMassive = async () => {
+    if (!confirm('¿Consultar BCRA para todos los clientes con CUIL?')) return;
+    
+    setConsultingMassive(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/bcra-validate-cron', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setConsultingMassive(false);
+      fetchClients();
+      alert(`Validación BCRA completada:\n- Coincidencias: ${data.matches}\n- Errores: ${data.mismatches}`);
+    } catch (error) {
+      setConsultingMassive(false);
+      console.error('Error en consulta masiva:', error);
+      alert('Error al consultar BCRA');
+    }
+  };
+
   const resetForm = () => {
     setForm({ name: '', phone: '', address: '', dni_front: '', dni_back: '', cuil: '' });
     setEditingClient(null);
@@ -269,9 +290,21 @@ export default function ClientsPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <h1 className="page-title">Clientes</h1>
-        <button onClick={() => { resetForm(); setShowForm(true); }} className="btn btn-primary">
-          {showForm ? 'Cancelar' : 'Nuevo Cliente'}
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {user.role === 'admin' && (
+            <button 
+              onClick={handleConsultMassive} 
+              disabled={consultingMassive}
+              className="btn btn-secondary"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+            >
+              {consultingMassive ? '⏳ Consultando...' : '📊 Consultar BCRA'}
+            </button>
+          )}
+          <button onClick={() => { resetForm(); setShowForm(true); }} className="btn btn-primary">
+            {showForm ? 'Cancelar' : 'Nuevo Cliente'}
+          </button>
+        </div>
       </div>
 
       {showForm && (
