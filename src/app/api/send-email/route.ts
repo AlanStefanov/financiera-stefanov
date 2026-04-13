@@ -1,19 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
+import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import path from 'path';
+import dns from 'dns';
 import { getJwtSecret } from '@/lib/auth';
 
 const smtpPort = parseInt(process.env.SMTP_PORT || '587');
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: smtpPort,
-  secure: smtpPort === 465,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,6 +30,29 @@ export async function POST(request: NextRequest) {
       console.error('Missing SMTP configuration');
       return NextResponse.json({ message: 'Error al enviar email: configuración SMTP incompleta' }, { status: 500 });
     }
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
+      lookup: (
+        hostname: string,
+        options: any,
+        callback: (err: NodeJS.ErrnoException | null, address: string, family: number) => void,
+      ) => {
+        dns.lookup(hostname, { family: 4, all: false }, callback);
+      },
+    } as SMTPTransport.Options);
 
     const mailOptions: any = {
       from: process.env.SMTP_USER,
