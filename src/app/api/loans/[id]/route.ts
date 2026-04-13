@@ -121,27 +121,27 @@ export async function PUT(
 
       const existingPayments = await all('SELECT COUNT(*) as count FROM loan_payments WHERE loan_id = ?', [parseInt(id)]);
       
-      if (status === 'aprobado' && existingPayments[0]?.count === 0) {
+      const shouldGenerateApprovalSchedule =
+        status === 'aprobado' && (currentLoan?.status === 'orden' || Number(existingPayments[0]?.count || 0) === 0);
+
+      if (shouldGenerateApprovalSchedule) {
         const loanType = await get('SELECT * FROM loan_types WHERE id = ?', [currentLoan?.loan_type_id]);
         if (loanType) {
+          await run('DELETE FROM loan_payments WHERE loan_id = ?', [parseInt(id)]);
+
           const numPayments = loanType.modality === 'daily' ? 20 : loanType.modality === 'weekly' ? 4 : Number(loanType.duration_months);
           const paymentAmount = (currentLoan?.total_amount as number) / numPayments;
+          const intervalDays = loanType.modality === 'weekly' ? 7 : loanType.modality === 'monthly' ? 28 : 1;
           
           let currentDate = new Date();
-          if (loanType.modality === 'weekly') {
-            currentDate.setDate(currentDate.getDate() + 7);
-          } else if (loanType.modality === 'monthly') {
-            currentDate.setDate(currentDate.getDate() + 28);
-          } else {
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
+          currentDate.setDate(currentDate.getDate() + intervalDays);
 
           for (let i = 0; i < numPayments; i++) {
             await run(
               'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
               [parseInt(id), i + 1, paymentAmount, currentDate.toISOString()]
             );
-            currentDate.setDate(currentDate.getDate() + (loanType.modality === 'weekly' ? 7 : loanType.modality === 'monthly' ? 28 : 1));
+            currentDate.setDate(currentDate.getDate() + intervalDays);
           }
         }
       }
