@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSnackbar } from '@/components/Snackbar';
 
 interface Loan {
   id: number;
@@ -66,6 +67,26 @@ export default function LoansPage() {
   const [expandedLoanId, setExpandedLoanId] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: number | null }>({ show: false, id: null });
+  const { showSnackbar } = useSnackbar();
+
+  const getFirstPaymentMessage = (modality: string) => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const friday = new Date();
+    const dayOfWeek = friday.getDay();
+    const daysUntilFriday = (5 - dayOfWeek + 7) % 7 || 7;
+    friday.setDate(friday.getDate() + daysUntilFriday);
+
+    if (modality === 'daily') {
+      const tomorrowStr = tomorrow.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+      return 'Su primera cuota sera manana (' + tomorrowStr + ')';
+    } else if (modality === 'weekly') {
+      const fridayStr = friday.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+      return 'Su primera cuota sera el ' + fridayStr;
+    } else {
+      return 'Su primera cuota sera dentro de los proximos 28 dias';
+    }
+  };
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -131,9 +152,10 @@ export default function LoansPage() {
         setFormData({ client_id: '', loan_type_id: '', principal_amount: '', start_date: '' });
         setShowForm(false);
         fetchData();
+        showSnackbar('Préstamo creado exitosamente');
       } else {
         const data = await res.json();
-        alert(data.message || 'Error al crear préstamo');
+        showSnackbar(data.message || 'Error al crear préstamo', 'error');
       }
     } catch (error) {
       console.error('Error creating loan:', error);
@@ -305,7 +327,7 @@ export default function LoansPage() {
         if (selectedLoan?.id === loanId) {
           handleViewPayments({ ...selectedLoan, id: loanId } as Loan);
         }
-        alert('Cuotas regeneradas correctamente');
+        showSnackbar('Cuotas regeneradas correctamente');
       }
     } catch (error) {
       console.error('Error regenerating payments:', error);
@@ -501,7 +523,13 @@ export default function LoansPage() {
                     </td>
                     <td data-label="Tipo">{loan.loan_type_name}</td>
                     <td data-label="Operador">{loan.operator_name || '-'}</td>
-                    <td data-label="Inicio">{new Date(loan.start_date).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</td>
+                    <td data-label="Inicio">
+                      {loan.status === 'orden' ? (
+                        <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Pendiente aprobación</span>
+                      ) : (
+                        new Date(loan.start_date).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })
+                      )}
+                    </td>
                     <td data-label="Fin">{loan.end_date ? new Date(loan.end_date).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) : '-'}</td>
                     <td data-label="Estado">
                       <span style={{
@@ -627,6 +655,11 @@ export default function LoansPage() {
             <p><strong>Cliente:</strong> {selectedLoan.client_name}</p>
             <p><strong>Monto:</strong> ${selectedLoan.principal_amount.toFixed(2)} | <strong>Total:</strong> ${selectedLoan.total_amount.toFixed(2)}</p>
             <p><strong>Tipo:</strong> {selectedLoan.loan_type_name}</p>
+            {selectedLoan.status === 'orden' && (
+              <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#fef3c7', borderRadius: 'var(--radius)', color: '#92400e' }}>
+                {getFirstPaymentMessage(selectedLoan.modality)}
+              </div>
+            )}
           </div>
             <table className="table table-mobile-card">
               <thead>

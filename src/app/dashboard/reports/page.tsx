@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSnackbar } from '@/components/Snackbar';
 
 interface User {
   role: string;
@@ -14,7 +13,7 @@ export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<'operators' | 'collections' | 'overdue'>('operators');
   const [sendEmailModal, setSendEmailModal] = useState<{ show: boolean; operatorId?: number; operatorName?: string; operatorEmail?: string }>({ show: false });
   const [sendingEmail, setSendingEmail] = useState(false);
-  const { showSnackbar } = useSnackbar();
+  const [notification, setNotification] = useState<{ message: string; type?: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -92,14 +91,14 @@ export default function ReportsPage() {
       });
 
       if (res.ok) {
-        showSnackbar('Email enviado exitosamente');
+        setNotification({ message: 'Email enviado exitosamente', type: 'success' });
       } else {
         const data = await res.json();
-        showSnackbar(data.message || 'Error al enviar email', 'error');
+        setNotification({ message: data.message || 'Error al enviar email', type: 'error' });
       }
     } catch (error) {
       console.error('Error sending email:', error);
-      showSnackbar('Error al enviar email', 'error');
+      setNotification({ message: 'Error al enviar email', type: 'error' });
     } finally {
       setSendingEmail(false);
       setSendEmailModal({ show: false });
@@ -114,6 +113,18 @@ export default function ReportsPage() {
   return (
     <div>
       <h1 style={{ marginBottom: '1.5rem' }}>Reportes</h1>
+      {notification && (
+        <div style={{
+          marginBottom: '1rem',
+          padding: '1rem',
+          borderRadius: '0.5rem',
+          background: notification.type === 'error' ? '#fee2e2' : '#d1fae5',
+          color: notification.type === 'error' ? '#b91c1c' : '#166534',
+          border: notification.type === 'error' ? '1px solid #fca5a5' : '1px solid #6ee7b7'
+        }}>
+          {notification.message}
+        </div>
+      )}
 
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>

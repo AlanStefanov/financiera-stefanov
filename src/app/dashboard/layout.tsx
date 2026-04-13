@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { SnackbarProvider } from '@/components/Snackbar';
 
 interface User {
   id: number;
@@ -67,16 +68,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <header className="header">
+    <SnackbarProvider>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <header className="header">
         <div className="container header-content">
           <Link href="/dashboard" className="header-logo">
-            <div className="header-logo-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
-              </svg>
-            </div>
-            <span>Stefanov</span>
+            <img 
+              src="/logo.png" 
+              alt="Stefanov"
+              style={{ 
+                height: '56px', 
+                borderRadius: '6px',
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'scale(1.05)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            />
           </Link>
 
           <button 
@@ -160,7 +173,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {children}
       </main>
 
-      <footer className="footer">
+        <footer className="footer">
         <div className="container footer-content">
           <p className="footer-text">© 2026 Microcréditos Stefanov. Todos los derechos reservados.</p>
           <p className="footer-text">Sistema de Gestión de Préstamos v1.2.0</p>
@@ -178,5 +191,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
       `}</style>
     </div>
+    </SnackbarProvider>
   );
 }

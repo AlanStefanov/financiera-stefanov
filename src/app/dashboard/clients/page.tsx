@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import NextImage from 'next/image';
+import { useSnackbar } from '@/components/Snackbar';
 
 interface Client {
   id: number;
@@ -38,6 +39,7 @@ export default function ClientsPage() {
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: number | null }>({ show: false, id: null });
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
+  const { showSnackbar } = useSnackbar();
 
   const fetchClients = async () => {
     try {
@@ -138,10 +140,10 @@ export default function ClientsPage() {
           setEditingClient(null);
           setShowForm(false);
           fetchClients();
-          setFormMessage({ type: 'success', text: 'Cliente actualizado exitosamente' });
+          showSnackbar('Cliente actualizado exitosamente');
         } else {
           const data = await res.json();
-          setFormMessage({ type: 'error', text: data.message || 'Error al actualizar cliente' });
+          showSnackbar(data.message || 'Error al actualizar cliente', 'error');
         }
       } else {
         const res = await fetch('/api/clients', {
@@ -157,10 +159,10 @@ export default function ClientsPage() {
           setForm({ name: '', phone: '', address: '', dni_front: '', dni_back: '', cuil: '' });
           setShowForm(false);
           fetchClients();
-          setFormMessage({ type: 'success', text: 'Cliente guardado exitosamente' });
+          showSnackbar('Cliente guardado exitosamente');
         } else {
           const data = await res.json();
-          setFormMessage({ type: 'error', text: data.message || 'Error al guardar cliente' });
+          showSnackbar(data.message || 'Error al guardar cliente', 'error');
         }
       }
     } catch (error) {
@@ -210,7 +212,7 @@ export default function ClientsPage() {
         fetchClients();
       } else {
         const data = await res.json();
-        alert(data.message || 'Error al eliminar cliente');
+        showSnackbar(data.message || 'Error al eliminar cliente', 'error');
       }
     } catch (error) {
       console.error('Error deleting client:', error);
@@ -222,7 +224,7 @@ export default function ClientsPage() {
   const handleConsultBcra = async (clientId: number) => {
     const client = clients.find(c => c.id === clientId);
     if (!client || !client.cuil) {
-      alert('El cliente no tiene CUIL registrado');
+      showSnackbar('El cliente no tiene CUIL registrado', 'error');
       return;
     }
 

@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
         u.id as operator_id,
         u.name as operator_name,
         u.lastname as operator_lastname,
+        u.email as operator_email,
         COUNT(DISTINCT l.id) as total_loans,
         SUM(l.principal_amount) as total_principal,
         SUM(l.total_amount) as total_with_interest,
@@ -73,14 +74,17 @@ export async function GET(request: NextRequest) {
         lp.amount,
         lp.due_date,
         l.principal_amount,
+        l.status,
+        l.modality,
         c.name as client_name,
         c.phone as client_phone,
-        u.name || ' ' || u.lastname as operator_name
+        u.name || ' ' || u.lastname as operator_name,
+        u.email as operator_email
       FROM loan_payments lp
       JOIN loans l ON lp.loan_id = l.id
       JOIN clients c ON l.client_id = c.id
       JOIN users u ON l.operator_id = u.id
-      WHERE lp.is_paid = 0 AND lp.due_date < datetime('now')
+      WHERE lp.is_paid = 0 AND lp.due_date < datetime('now') AND l.status != 'orden'
       ORDER BY lp.due_date ASC
     `);
 
@@ -98,8 +102,8 @@ export async function GET(request: NextRequest) {
         overdueCount: overduePayments.length,
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching reports:', error);
-    return NextResponse.json({ error: 'Error fetching reports' }, { status: 500 });
+    return NextResponse.json({ error: 'Error fetching reports: ' + (error.message || 'Error desconocido') }, { status: 500 });
   }
 }

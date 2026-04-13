@@ -42,22 +42,31 @@ export default function LoginPage() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' }}>
       <div style={{ width: '100%', maxWidth: '420px' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ 
-            width: '64px', 
-            height: '64px', 
-            background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)', 
-            borderRadius: '16px', 
-            display: 'inline-flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            marginBottom: '1rem',
-            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
+<div style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center',
+            marginBottom: '1.5rem',
+            cursor: 'pointer'
           }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-            </svg>
+            <img 
+              src="/logo.png" 
+              alt="Stefanov"
+              style={{ 
+                height: '100px', 
+                borderRadius: '8px',
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'scale(1.05)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            />
           </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#0f172a' }}>Microcréditos Stefanov</h1>
           <p style={{ color: '#64748b', marginTop: '0.5rem' }}>Sistema de Gestión de Préstamos</p>
         </div>
         

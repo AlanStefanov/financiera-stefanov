@@ -22,10 +22,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
     }
 
-    const users = await all('SELECT id, username, name, lastname, phone, role, created_at FROM users ORDER BY created_at DESC');
+    const users = await all('SELECT id, username, name, lastname, phone, email, role, created_at FROM users ORDER BY created_at DESC');
     return NextResponse.json(users);
-  } catch (error) {
-    return NextResponse.json({ error: 'Error fetching users' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Error fetching users:', error);
+    return NextResponse.json({ error: 'Error fetching users: ' + (error.message || 'Error desconocido') }, { status: 500 });
   }
 }
 
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Error: formato de datos inválido' }, { status: 400 });
     }
     
-    const { username, name, lastname, phone, password, role } = body;
+    const { username, name, lastname, phone, email, password, role } = body;
 
     if (!username || !name || !lastname || !phone || !password || !role) {
       return NextResponse.json({ message: 'Faltan campos requeridos' }, { status: 400 });
@@ -61,11 +62,11 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = bcrypt.hashSync(password, 10);
     const result = await run(
-      'INSERT INTO users (username, name, lastname, phone, password, role) VALUES (?, ?, ?, ?, ?, ?)',
-      [username, name, lastname, phone, hashedPassword, role]
+      'INSERT INTO users (username, name, lastname, phone, email, password, role) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [username, name, lastname, phone, email || null, hashedPassword, role]
     );
 
-    const user = await get('SELECT id, username, name, lastname, phone, role, created_at FROM users WHERE id = ?', [result.lastID]);
+    const user = await get('SELECT id, username, name, lastname, phone, email, role, created_at FROM users WHERE id = ?', [result.lastID]);
 
     return NextResponse.json({
       message: 'Usuario creado exitosamente',
