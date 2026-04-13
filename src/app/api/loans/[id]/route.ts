@@ -77,7 +77,7 @@ export async function PUT(
         const numPayments = loanType.modality === 'daily' ? 20 : loanType.modality === 'weekly' ? 4 : Number(loanType.duration_months);
         const paymentAmount = (loan.total_amount as number) / numPayments;
         const intervalDays = loanType.modality === 'weekly' ? 7 : loanType.modality === 'monthly' ? 28 : 1;
-        
+
         const baseDate = loan.status === 'aprobado' ? new Date() : new Date(loan.start_date as string);
         let currentDate = new Date(baseDate);
         currentDate.setDate(currentDate.getDate() + intervalDays);
