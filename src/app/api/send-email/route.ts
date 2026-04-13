@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import path from 'path';
+import { getJwtSecret } from '@/lib/auth';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'default_secret_change_in_production';
-
+const smtpPort = parseInt(process.env.SMTP_PORT || '587');
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false,
+  port: smtpPort,
+  secure: smtpPort === 465,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { role: string };
+    const decoded = jwt.verify(token, getJwtSecret()) as { role: string };
     if (decoded.role !== 'admin') {
       return NextResponse.json({ message: 'Solo admins pueden enviar emails' }, { status: 403 });
     }
@@ -31,6 +31,11 @@ export async function POST(request: NextRequest) {
 
     if (!to || !subject || !body) {
       return NextResponse.json({ message: 'Faltan campos requeridos' }, { status: 400 });
+    }
+
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.error('Missing SMTP configuration');
+      return NextResponse.json({ message: 'Error al enviar email: configuración SMTP incompleta' }, { status: 500 });
     }
 
     const mailOptions: any = {
@@ -53,8 +58,8 @@ export async function POST(request: NextRequest) {
     await transporter.sendMail(mailOptions);
 
     return NextResponse.json({ message: 'Email enviado exitosamente' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error sending email:', error);
-    return NextResponse.json({ message: 'Error al enviar email' }, { status: 500 });
+    return NextResponse.json({ message: 'Error al enviar email: ' + (error.message || 'Error desconocido') }, { status: 500 });
   }
 }
