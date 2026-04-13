@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSnackbar } from '@/components/Snackbar';
+import { useSnackbar } from '../../../components/Snackbar';
 
 interface User {
   role: string;
