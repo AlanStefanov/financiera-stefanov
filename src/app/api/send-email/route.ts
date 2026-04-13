@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
+import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import path from 'path';
 import dns from 'dns';
 import { getJwtSecret } from '@/lib/auth';
@@ -44,10 +45,14 @@ export async function POST(request: NextRequest) {
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 10000,
-      lookup: (hostname, options, callback) => {
+      lookup: (
+        hostname: string,
+        options: any,
+        callback: (err: NodeJS.ErrnoException | null, address: string, family: number) => void,
+      ) => {
         dns.lookup(hostname, { family: 4, all: false }, callback);
       },
-    });
+    } as SMTPTransport.Options);
 
     const mailOptions: any = {
       from: process.env.SMTP_USER,
