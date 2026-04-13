@@ -55,7 +55,7 @@ export default function ReportsPage() {
     setSendingEmail(true);
     try {
       const token = localStorage.getItem('token');
-      const operatorOverdue = overduePayments.filter((p: any) => p.operator_name === sendEmailModal.operatorName);
+      const operatorOverdue = overduePayments.filter((p: any) => p.operator_id === sendEmailModal.operatorId);
       const count = operatorOverdue.length;
       
       const subject = `Pagos Atrasados - ${count} cliente(s) necesita(n) validación`;

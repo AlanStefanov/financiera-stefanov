@@ -136,20 +136,16 @@ export async function PUT(
       if (status === 'aprobado' && existingPayments[0]?.count === 0) {
         const loanType = await get('SELECT * FROM loan_types WHERE id = ?', [currentLoan?.loan_type_id]);
         if (loanType) {
-          const numPayments = loanType.modality === 'daily' ? 20 : 4;
+          const numPayments = loanType.modality === 'daily' ? 20 : loanType.modality === 'weekly' ? 4 : Number(loanType.duration_months);
           const paymentAmount = (currentLoan?.total_amount as number) / numPayments;
           
           let currentDate = new Date();
-          currentDate.setDate(currentDate.getDate() + 1);
-          
           if (loanType.modality === 'weekly') {
-            while (currentDate.getDay() !== 5) {
-              currentDate.setDate(currentDate.getDate() + 1);
-            }
+            currentDate.setDate(currentDate.getDate() + 7);
+          } else if (loanType.modality === 'monthly') {
+            currentDate.setDate(currentDate.getDate() + 28);
           } else {
-            while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-              currentDate.setDate(currentDate.getDate() + 1);
-            }
+            currentDate.setDate(currentDate.getDate() + 1);
           }
 
           for (let i = 0; i < numPayments; i++) {
@@ -157,16 +153,7 @@ export async function PUT(
               'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
               [parseInt(id), i + 1, paymentAmount, currentDate.toISOString()]
             );
-            currentDate.setDate(currentDate.getDate() + 1);
-            if (loanType.modality === 'weekly') {
-              while (currentDate.getDay() !== 5) {
-                currentDate.setDate(currentDate.getDate() + 1);
-              }
-            } else {
-              while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-                currentDate.setDate(currentDate.getDate() + 1);
-              }
-            }
+            currentDate.setDate(currentDate.getDate() + (loanType.modality === 'weekly' ? 7 : loanType.modality === 'monthly' ? 28 : 1));
           }
         }
       }
