@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDB, all, get } from '@/lib/db';
 import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'default_secret_change_in_production';
+import { getJwtSecret } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { role: string };
+    const decoded = jwt.verify(token, getJwtSecret()) as { role: string };
     if (decoded.role !== 'admin') {
       return NextResponse.json({ message: 'Solo admins pueden acceder' }, { status: 403 });
     }
@@ -104,6 +103,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching reports:', error);
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      return NextResponse.json({ error: 'Token inválido o expirado' }, { status: 401 });
+    }
     return NextResponse.json({ error: 'Error fetching reports: ' + (error.message || 'Error desconocido') }, { status: 500 });
   }
 }

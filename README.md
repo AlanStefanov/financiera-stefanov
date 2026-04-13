@@ -60,7 +60,7 @@ npm run dev
 Crea un archivo `.env.local` en la raíz del proyecto:
 
 ```env
-JWT_SECRET=tu_secreto_aqui
+# No es necesario configurar JWT_SECRET localmente, se usa el valor por defecto de la aplicación.
 ```
 
 ## Roles de Usuario

@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDB, get, run, all } from '@/lib/db';
+import { getJwtSecret } from '@/lib/auth';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'default_secret_change_in_production';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role, name: user.name, lastname: user.lastname },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '24h' }
     );
 

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDB, all, run, get } from '@/lib/db';
 import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'default_secret_change_in_production';
+import { getJwtSecret } from '@/lib/auth';
 
 const getNextBusinessDay = (date: Date): Date => {
   const next = new Date(date);
@@ -21,7 +20,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: number; role: string };
+    const decoded = jwt.verify(token, getJwtSecret()) as { id: number; role: string };
     
     let query = `
       SELECT l.*, c.name as client_name, c.phone as client_phone, u.name || ' ' || u.lastname as operator_name,
@@ -42,7 +41,11 @@ export async function GET(request: NextRequest) {
     
     const loans = await all(query);
     return NextResponse.json(loans);
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Error fetching loans:', error);
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      return NextResponse.json({ error: 'Token inválido o expirado' }, { status: 401 });
+    }
     return NextResponse.json({ error: 'Error fetching loans' }, { status: 500 });
   }
 }
@@ -55,7 +58,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
+    const decoded = jwt.verify(token, getJwtSecret()) as { id: number };
 
     const body = await request.json();
     const { client_id, loan_type_id, principal_amount, start_date, regenerate_payments } = body;
