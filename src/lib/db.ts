@@ -115,6 +115,7 @@ export const initializeDatabase = async () => {
       total_amount REAL NOT NULL,
       start_date DATETIME NOT NULL,
       end_date DATETIME NOT NULL,
+      approved_at DATETIME,
       status TEXT NOT NULL DEFAULT 'orden' CHECK(status IN ('orden', 'aprobado', 'finalizado')),
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -163,6 +164,10 @@ export const initializeDatabase = async () => {
     try {
       await getClient().execute('ALTER TABLE clients ADD COLUMN credit_limit REAL DEFAULT 500000');
     } catch (e) { /* ignore if exists */ }
+    try {
+      await getClient().execute('ALTER TABLE loans ADD COLUMN approved_at DATETIME');
+    } catch (e) { /* ignore if exists */ }
+    await getClient().execute("UPDATE loans SET approved_at = updated_at WHERE status = 'aprobado' AND approved_at IS NULL");
     console.log('Base de datos Turso inicializada correctamente');
     return;
   }
@@ -202,6 +207,7 @@ export const initializeDatabase = async () => {
             total_amount REAL NOT NULL,
             start_date DATETIME NOT NULL,
             end_date DATETIME NOT NULL,
+            approved_at DATETIME,
             status TEXT NOT NULL DEFAULT 'orden' CHECK(status IN ('orden', 'aprobado', 'finalizado')),
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -212,8 +218,8 @@ export const initializeDatabase = async () => {
         `);
         
         await getClient().execute(`
-          INSERT INTO loans (id, client_id, operator_id, loan_type_id, principal_amount, total_amount, start_date, end_date, status, created_at, updated_at)
-          SELECT id, client_id, operator_id, loan_type_id, principal_amount, total_amount, start_date, end_date, status, created_at, updated_at 
+          INSERT INTO loans (id, client_id, operator_id, loan_type_id, principal_amount, total_amount, start_date, end_date, approved_at, status, created_at, updated_at)
+          SELECT id, client_id, operator_id, loan_type_id, principal_amount, total_amount, start_date, end_date, approved_at, status, created_at, updated_at 
           FROM loans_new
         `);
         
@@ -279,6 +285,10 @@ export const initializeDatabase = async () => {
   try {
     await getClient().execute('ALTER TABLE clients ADD COLUMN cuil TEXT');
   } catch (e) { /* ignore if exists */ }
+  try {
+    await getClient().execute('ALTER TABLE loans ADD COLUMN approved_at DATETIME');
+  } catch (e) { /* ignore if exists */ }
+  await getClient().execute("UPDATE loans SET approved_at = updated_at WHERE status = 'aprobado' AND approved_at IS NULL");
 
   // Mark migrations as completed
   await getClient().execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('migrations_ran', 'true')");
