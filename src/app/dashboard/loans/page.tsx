@@ -65,6 +65,7 @@ export default function LoansPage() {
   const [partialPayment, setPartialPayment] = useState<{ payment: LoanPayment; amount: string } | null>(null);
   const [expandedLoanId, setExpandedLoanId] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: number | null }>({ show: false, id: null });
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -263,23 +264,24 @@ export default function LoansPage() {
     }
   };
 
-  const handleDeleteLoan = async (loanId: number) => {
-    if (!confirm('¿Estás seguro de eliminar este préstamo? Esta acción no se puede deshacer.')) return;
-    
+  const handleDeleteLoan = async () => {
+    if (!confirmDelete.id) return;
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/loans/${loanId}`, {
+      const res = await fetch(`/api/loans/${confirmDelete.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         fetchData();
-        if (selectedLoan?.id === loanId) {
+        if (selectedLoan?.id === confirmDelete.id) {
           setSelectedLoan(null);
         }
       }
     } catch (error) {
       console.error('Error deleting loan:', error);
+    } finally {
+      setConfirmDelete({ show: false, id: null });
     }
   };
 
@@ -542,7 +544,7 @@ export default function LoansPage() {
                             ↻
                           </button>
                           <button
-                            onClick={() => handleDeleteLoan(loan.id)}
+                            onClick={() => setConfirmDelete({ show: true, id: loan.id })}
                             className="icon-action-button danger"
                             title="Eliminar"
                             aria-label="Eliminar"
@@ -737,6 +739,32 @@ export default function LoansPage() {
               </button>
               <button onClick={() => setPartialPayment(null)} className="btn btn-secondary" style={{ flex: 1 }}>
                 Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDelete.show && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, padding: '1rem'
+        }}>
+          <div style={{
+            background: 'white', borderRadius: '0.5rem', padding: '1.5rem',
+            maxWidth: '400px', width: '100%', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+          }}>
+            <h3 style={{ margin: '0 0 1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
+            <p style={{ margin: '0 0 1.5rem', color: '#666' }}>
+              ¿Estás seguro de que deseas eliminar este préstamo? Esta acción no se puede deshacer.
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button onClick={() => setConfirmDelete({ show: false, id: null })} className="btn btn-secondary">
+                Cancelar
+              </button>
+              <button onClick={handleDeleteLoan} className="btn btn-danger">
+                Eliminar
               </button>
             </div>
           </div>
