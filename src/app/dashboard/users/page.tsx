@@ -27,6 +27,7 @@ export default function UsersPage() {
   });
 
   const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: number | null }>({ show: false, id: null });
 
   const fetchUsers = async () => {
     try {
@@ -118,17 +119,19 @@ export default function UsersPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
+  const handleDelete = async () => {
+    if (!confirmDelete.id) return;
     try {
       const token = localStorage.getItem('token');
-      await fetch(`/api/users/${id}`, {
+      await fetch(`/api/users/${confirmDelete.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
+    } finally {
+      setConfirmDelete({ show: false, id: null });
     }
   };
 
@@ -276,7 +279,7 @@ export default function UsersPage() {
                         ✏️
                       </button>
                       <button
-                        onClick={() => handleDelete(user.id)}
+                        onClick={() => setConfirmDelete({ show: true, id: user.id })}
                         className="icon-action-button danger"
                         title="Eliminar"
                         aria-label="Eliminar"
@@ -291,6 +294,32 @@ export default function UsersPage() {
           </tbody>
         </table>
       </div>
+
+      {confirmDelete.show && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, padding: '1rem'
+        }}>
+          <div style={{
+            background: 'white', borderRadius: '0.5rem', padding: '1.5rem',
+            maxWidth: '400px', width: '100%', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+          }}>
+            <h3 style={{ margin: '0 0 1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
+            <p style={{ margin: '0 0 1.5rem', color: '#666' }}>
+              ¿Estás seguro de que deseas eliminar este usuario?
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button onClick={() => setConfirmDelete({ show: false, id: null })} className="btn btn-secondary">
+                Cancelar
+              </button>
+              <button onClick={handleDelete} className="btn btn-danger">
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

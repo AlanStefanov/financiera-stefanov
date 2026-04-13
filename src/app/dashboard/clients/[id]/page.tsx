@@ -29,6 +29,7 @@ export default function ClientDetailPage() {
   const [form, setForm] = useState({ name: '', phone: '', address: '', cuil: '', dni_front: '', dni_back: '' });
   const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [consultingBcra, setConsultingBcra] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
 
@@ -182,7 +183,6 @@ export default function ClientDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.')) return;
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/clients/${params.id}`, {
@@ -197,6 +197,8 @@ export default function ClientDetailPage() {
       }
     } catch (error) {
       console.error('Error deleting client:', error);
+    } finally {
+      setConfirmDelete(false);
     }
   };
 
@@ -313,25 +315,23 @@ export default function ClientDetailPage() {
                 )}
               </div>
             </div>
-            <div className="form-actions">
-              <button type="submit" className="btn btn-primary">Guardar Cambios</button>
-              <button type="button" onClick={() => setEditing(false)} className="btn btn-secondary" style={{ marginLeft: '0.5rem' }}>Cancelar</button>
-            </div>
+            <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem' }}>
+              Guardar cambios
+            </button>
           </form>
         </div>
       ) : (
-        <div>
-          <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
-                <h1 style={{ margin: 0 }}>{client.name}</h1>
+                <h2 style={{ margin: 0 }}>{client.name}</h2>
                 <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0' }}>ID: {client.id}</p>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button onClick={() => setEditing(true)} title="Editar" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem', fontSize: '1.5rem' }}>
                   ✏️
                 </button>
-                <button onClick={handleDelete} title="Eliminar" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem', fontSize: '1.5rem' }}>
+                <button onClick={() => setConfirmDelete(true)} title="Eliminar" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem', fontSize: '1.5rem' }}>
                   🗑️
                 </button>
                 <button onClick={handleToggleActive} title={client.is_active === 0 ? 'Activar' : 'Desactivar'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem', fontSize: '1.5rem' }}>
@@ -340,65 +340,29 @@ export default function ClientDetailPage() {
               </div>
             </div>
           </div>
+        )}
 
-          <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <h3 style={{ marginBottom: '1rem' }}>Fotos del DNI</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>Frente</p>
-                {client.dni_front ? (
-                  <img src={client.dni_front} alt="DNI frente" style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
-                ) : (
-                  <div style={{ padding: '3rem', textAlign: 'center', background: 'var(--background)', borderRadius: 'var(--radius)', color: 'var(--text-secondary)' }}>Sin imagen</div>
-                )}
-              </div>
-              <div>
-                <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>Dorso</p>
-                {client.dni_back ? (
-                  <img src={client.dni_back} alt="DNI dorso" style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
-                ) : (
-                  <div style={{ padding: '3rem', textAlign: 'center', background: 'var(--background)', borderRadius: 'var(--radius)', color: 'var(--text-secondary)' }}>Sin imagen</div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3>Estado BCRA</h3>
-              {client.cuil && (
-                <button
-                  onClick={handleConsultBcra}
-                  disabled={consultingBcra}
-                  className="btn btn-primary"
-                >
-                  {consultingBcra ? 'Consultando...' : 'Consultar BCRA'}
-                </button>
-              )}
-            </div>
-            <div style={{ padding: '1rem', background: 'var(--background)', borderRadius: 'var(--radius)' }}>
-              {client.bcra_status ? (
-                <>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>{client.bcra_status}</div>
-                  <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Última actualización: {new Date(client.bcra_updated_at || client.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</p>
-                </>
-              ) : client.cuil ? (
-                <p style={{ color: 'var(--text-secondary)' }}>Sin consultar. Presione "Consultar BCRA" para verificar el estado.</p>
-              ) : (
-                <p style={{ color: 'var(--text-secondary)' }}>No hay CUIL registrado</p>
-              )}
-            </div>
-          </div>
-
-          <div className="card">
-            <h3 style={{ marginBottom: '1rem' }}>Detalles</h3>
-            <div style={{ display: 'grid', gap: '0.75rem' }}>
-              <div><strong>Teléfono:</strong> {client.phone}</div>
-              <div><strong>Dirección:</strong> {client.address || '-'}</div>
-              <div><strong>CUIL:</strong> {client.cuil || '-'}</div>
-              <div><strong>Creado por:</strong> {client.creator_name} {client.creator_lastname}</div>
-              <div><strong>Fecha de creación:</strong> {new Date(client.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</div>
-              <div><strong>Estado:</strong> {client.is_active === 0 ? '❌ Desactivado' : '✅ Activo'}</div>
+      {confirmDelete && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, padding: '1rem'
+        }}>
+          <div style={{
+            background: 'white', borderRadius: '0.5rem', padding: '1.5rem',
+            maxWidth: '400px', width: '100%', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+          }}>
+            <h3 style={{ margin: '0 0 1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
+            <p style={{ margin: '0 0 1.5rem', color: '#666' }}>
+              ¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button onClick={() => setConfirmDelete(false)} className="btn btn-secondary">
+                Cancelar
+              </button>
+              <button onClick={handleDelete} className="btn btn-danger">
+                Eliminar
+              </button>
             </div>
           </div>
         </div>

@@ -35,6 +35,7 @@ export default function ClientsPage() {
   const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [consultingBcra, setConsultingBcra] = useState<number | null>(null);
   const [consultingMassive, setConsultingMassive] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: number | null }>({ show: false, id: null });
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
 
@@ -197,11 +198,11 @@ export default function ClientsPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.')) return;
+  const handleDelete = async () => {
+    if (!confirmDelete.id) return;
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/clients/${id}`, {
+      const res = await fetch(`/api/clients/${confirmDelete.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -213,6 +214,8 @@ export default function ClientsPage() {
       }
     } catch (error) {
       console.error('Error deleting client:', error);
+    } finally {
+      setConfirmDelete({ show: false, id: null });
     }
   };
 
@@ -525,7 +528,7 @@ export default function ClientsPage() {
                       </button>
                       {user.role === 'admin' && (
                         <>
-                          <button onClick={() => handleDelete(client.id)} className="icon-action-button danger" title="Eliminar" aria-label="Eliminar">
+                          <button onClick={() => setConfirmDelete({ show: true, id: client.id })} className="icon-action-button danger" title="Eliminar" aria-label="Eliminar">
                             🗑️
                           </button>
                           <button onClick={() => handleToggleActive(client.id, client.is_active || 1)} className="icon-action-button secondary" title={client.is_active === 0 ? 'Activar' : 'Desactivar'} aria-label={client.is_active === 0 ? 'Activar' : 'Desactivar'}>
@@ -578,6 +581,32 @@ export default function ClientsPage() {
               <p><strong>Teléfono:</strong> {selectedClient.phone}</p>
               <p><strong>Creado por:</strong> {selectedClient.creator_name} {selectedClient.creator_lastname}</p>
               <p><strong>Fecha:</strong> {new Date(selectedClient.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDelete.show && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, padding: '1rem'
+        }}>
+          <div style={{
+            background: 'white', borderRadius: '0.5rem', padding: '1.5rem',
+            maxWidth: '400px', width: '100%', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+          }}>
+            <h3 style={{ margin: '0 0 1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
+            <p style={{ margin: '0 0 1.5rem', color: '#666' }}>
+              ¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button onClick={() => setConfirmDelete({ show: false, id: null })} className="btn btn-secondary">
+                Cancelar
+              </button>
+              <button onClick={handleDelete} className="btn btn-danger">
+                Eliminar
+              </button>
             </div>
           </div>
         </div>
