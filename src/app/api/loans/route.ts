@@ -3,15 +3,6 @@ import { getDB, all, run, get } from '@/lib/db';
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '@/lib/auth';
 
-const getNextBusinessDay = (date: Date): Date => {
-  const next = new Date(date);
-  next.setDate(next.getDate() + 1);
-  while (next.getDay() === 0 || next.getDay() === 6) {
-    next.setDate(next.getDate() + 1);
-  }
-  return next;
-};
-
 export async function GET(request: NextRequest) {
   try {
     await getDB();
@@ -80,32 +71,17 @@ export async function POST(request: NextRequest) {
 
       const numPayments = Number(loanType.modality === 'daily' ? 20 : loanType.modality === 'weekly' ? 4 : loanType.duration_months);
       const paymentAmount = Number(existingLoan.total_amount) / numPayments;
+      const intervalDays = loanType.modality === 'weekly' ? 7 : loanType.modality === 'monthly' ? 28 : 1;
 
       let currentDate = new Date(existingLoan.start_date as string);
-      if (loanType.modality === 'weekly') {
-        while (currentDate.getDay() !== 5) {
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
-      } else if (loanType.modality === 'daily') {
-        currentDate = getNextBusinessDay(new Date(existingLoan.start_date as string));
-      } else if (loanType.modality === 'monthly') {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-      }
+      currentDate.setDate(currentDate.getDate() + intervalDays);
 
       for (let i = 0; i < numPayments; i++) {
         await run(
           'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
           [existingLoan.id, i + 1, paymentAmount, currentDate.toISOString()]
         );
-        if (loanType.modality === 'weekly') {
-          while (currentDate.getDay() !== 5) {
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-        } else if (loanType.modality === 'daily') {
-          currentDate = getNextBusinessDay(currentDate);
-        } else {
-          currentDate.setMonth(currentDate.getMonth() + 1);
-        }
+        currentDate.setDate(currentDate.getDate() + intervalDays);
       }
 
       const loan = await get('SELECT * FROM loans WHERE id = ?', [existingLoan.id]);
@@ -167,34 +143,17 @@ export async function POST(request: NextRequest) {
 
     const numPayments = Number(loanType.modality === 'daily' ? 20 : loanType.modality === 'weekly' ? 4 : loanType.duration_months);
     const paymentAmount = totalAmount / numPayments;
+    const intervalDays = loanType.modality === 'weekly' ? 7 : loanType.modality === 'monthly' ? 28 : 1;
 
     let currentDate = new Date(start);
-    if (loanType.modality === 'weekly') {
-      while (currentDate.getDay() !== 5) {
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-    } else if (loanType.modality === 'daily') {
-      while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-    } else if (loanType.modality === 'monthly') {
-      currentDate.setMonth(currentDate.getMonth() + 1);
-    }
+    currentDate.setDate(currentDate.getDate() + intervalDays);
 
     for (let i = 0; i < numPayments; i++) {
       await run(
         'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
         [result.lastID, i + 1, paymentAmount, currentDate.toISOString()]
       );
-      if (loanType.modality === 'weekly') {
-        while (currentDate.getDay() !== 5) {
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
-      } else if (loanType.modality === 'daily') {
-        currentDate = getNextBusinessDay(currentDate);
-      } else {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-      }
+      currentDate.setDate(currentDate.getDate() + intervalDays);
     }
 
     const loan = await get('SELECT * FROM loans WHERE id = ?', [result.lastID]);
