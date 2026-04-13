@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'default_secret_change_in_production';
+function getJwtSecret() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is required');
+  }
+  return secret;
+}
 
 export function authMiddleware(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
@@ -13,10 +19,10 @@ export function authMiddleware(request: NextRequest) {
   const token = authHeader.substring(7);
   
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret());
     return { valid: true, user: decoded };
-  } catch {
-    return NextResponse.json({ message: 'Token inválido' }, { status: 401 });
+  } catch (error: any) {
+    return NextResponse.json({ message: 'Token inválido: ' + (error.message || 'invalid token') }, { status: 401 });
   }
 }
 
@@ -30,8 +36,12 @@ export function getUserFromRequest(request: NextRequest) {
   const token = authHeader.substring(7);
   
   try {
-    return jwt.verify(token, JWT_SECRET) as { id: number; username: string; role: string };
+    return jwt.verify(token, getJwtSecret()) as { id: number; username: string; role: string };
   } catch {
     return null;
   }
+}
+
+export function verifyToken(token: string) {
+  return jwt.verify(token, getJwtSecret()) as { id: number; role: string; username?: string };
 }
