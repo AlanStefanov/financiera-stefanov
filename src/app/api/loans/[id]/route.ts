@@ -77,8 +77,11 @@ export async function PUT(
         const numPayments = loanType.modality === 'daily' ? 20 : loanType.modality === 'weekly' ? 4 : Number(loanType.duration_months);
         const paymentAmount = (loan.total_amount as number) / numPayments;
         const intervalDays = loanType.modality === 'weekly' ? 7 : loanType.modality === 'monthly' ? 28 : 1;
-
-        const baseDate = loan.status === 'aprobado' ? new Date() : new Date(loan.start_date as string);
+        const baseDate = loan.approved_at
+          ? new Date(loan.approved_at as string)
+          : (loan.status === 'aprobado' && loan.updated_at
+            ? new Date(loan.updated_at as string)
+            : new Date(loan.start_date as string));
         let currentDate = new Date(baseDate);
         currentDate.setDate(currentDate.getDate() + intervalDays);
 
@@ -112,7 +115,9 @@ export async function PUT(
 
       const currentLoan = await get('SELECT * FROM loans WHERE id = ?', [parseInt(id)]);
       
-      await run('UPDATE loans SET status = ?, updated_at = ? WHERE id = ?', [status, new Date().toISOString(), parseInt(id)]);
+      const nowIso = new Date().toISOString();
+      const approvedAt = status === 'aprobado' && currentLoan?.status !== 'aprobado' ? nowIso : (loan.approved_at as string | null);
+      await run('UPDATE loans SET status = ?, updated_at = ?, approved_at = ? WHERE id = ?', [status, nowIso, approvedAt, parseInt(id)]);
 
       const existingPayments = await all('SELECT COUNT(*) as count FROM loan_payments WHERE loan_id = ?', [parseInt(id)]);
       
