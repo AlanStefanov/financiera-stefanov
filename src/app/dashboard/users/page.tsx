@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSnackbar } from '@/components/Snackbar';
 
 interface User {
   id: number;
@@ -8,6 +9,7 @@ interface User {
   name: string;
   lastname: string;
   phone: string;
+  email?: string;
   role: string;
   created_at: string;
 }
@@ -22,12 +24,14 @@ export default function UsersPage() {
     name: '',
     lastname: '',
     phone: '',
+    email: '',
     password: '',
     role: 'operator'
   });
 
   const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: number | null }>({ show: false, id: null });
+  const { showSnackbar } = useSnackbar();
 
   const fetchUsers = async () => {
     try {
@@ -51,7 +55,7 @@ export default function UsersPage() {
   }, []);
 
   const resetForm = () => {
-    setFormData({ username: '', name: '', lastname: '', phone: '', password: '', role: 'operator' });
+    setFormData({ username: '', name: '', lastname: '', phone: '', email: '', password: '', role: 'operator' });
     setEditingUser(null);
     setShowForm(false);
     setFormMessage(null);
@@ -64,6 +68,7 @@ export default function UsersPage() {
       name: user.name,
       lastname: user.lastname,
       phone: user.phone,
+      email: user.email || '',
       password: '',
       role: user.role
     });
@@ -85,13 +90,12 @@ export default function UsersPage() {
           body: JSON.stringify(formData),
         });
         const data = await res.json();
-        alert(`${res.status}: ${data.message || JSON.stringify(data)}`);
         if (res.ok) {
           resetForm();
           fetchUsers();
-          setFormMessage({ type: 'success', text: 'Usuario actualizado exitosamente' });
+          showSnackbar('Usuario actualizado exitosamente');
         } else {
-          setFormMessage({ type: 'error', text: data.message || 'Error al actualizar usuario' });
+          showSnackbar(data.message || 'Error al actualizar usuario', 'error');
         }
       } else {
         const res = await fetch('/api/users', {
@@ -103,19 +107,17 @@ export default function UsersPage() {
           body: JSON.stringify(formData),
         });
         const data = await res.json();
-        alert(`${res.status}: ${data.message || JSON.stringify(data)}`);
         if (res.ok) {
           resetForm();
           fetchUsers();
-          setFormMessage({ type: 'success', text: 'Usuario guardado exitosamente' });
+          showSnackbar('Usuario guardado exitosamente');
         } else {
-          setFormMessage({ type: 'error', text: data.message || 'Error al guardar usuario' });
+          showSnackbar(data.message || 'Error al guardar usuario', 'error');
         }
       }
     } catch (error) {
       console.error('Error saving user:', error);
-      alert(`Error: ${error}`);
-      setFormMessage({ type: 'error', text: 'Error de conexión' });
+      showSnackbar('Error de conexión', 'error');
     }
   };
 
@@ -202,6 +204,15 @@ export default function UsersPage() {
                 />
               </div>
               <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email</label>
+                <input
+                  type="email"
+                  className="input"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+              <div>
                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>
                   Contraseña {editingUser ? '(dejar vacío para mantener)' : ''}
                 </label>
@@ -241,6 +252,7 @@ export default function UsersPage() {
               <th>Nombre</th>
               <th>Apellido</th>
               <th>Teléfono</th>
+              <th>Email</th>
               <th>Rol</th>
               <th>Acciones</th>
             </tr>
@@ -248,7 +260,7 @@ export default function UsersPage() {
           <tbody>
             {users.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center' }}>No hay usuarios</td>
+                <td colSpan={8} style={{ textAlign: 'center' }}>No hay usuarios</td>
               </tr>
             ) : (
               users.map((user) => (
@@ -258,6 +270,7 @@ export default function UsersPage() {
                   <td data-label="Nombre">{user.name}</td>
                   <td data-label="Apellido">{user.lastname}</td>
                   <td data-label="Teléfono">{user.phone}</td>
+                  <td data-label="Email">{user.email || '-'}</td>
                   <td data-label="Rol">
                     <span style={{
                       padding: '0.25rem 0.5rem',

@@ -66,6 +66,7 @@ export const initializeDatabase = async () => {
       name TEXT NOT NULL,
       lastname TEXT NOT NULL,
       phone TEXT NOT NULL,
+      email TEXT,
       password TEXT NOT NULL,
       role TEXT NOT NULL CHECK(role IN ('admin', 'operator')),
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP

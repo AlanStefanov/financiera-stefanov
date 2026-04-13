@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useSnackbar } from '@/components/Snackbar';
 
 interface Client {
   id: number;
@@ -32,6 +33,7 @@ export default function ClientDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
+  const { showSnackbar } = useSnackbar();
 
   const fetchClient = async () => {
     try {
@@ -132,10 +134,10 @@ export default function ClientDetailPage() {
       if (res.ok) {
         setEditing(false);
         fetchClient();
-        setFormMessage({ type: 'success', text: 'Cliente actualizado exitosamente' });
+        showSnackbar('Cliente actualizado exitosamente');
       } else {
         const data = await res.json();
-        setFormMessage({ type: 'error', text: data.message || 'Error al actualizar cliente' });
+        showSnackbar(data.message || 'Error al actualizar cliente', 'error');
       }
     } catch (error) {
       console.error('Error saving client:', error);
@@ -193,7 +195,7 @@ export default function ClientDetailPage() {
         router.push('/dashboard/clients');
       } else {
         const data = await res.json();
-        alert(data.message || 'Error al eliminar cliente');
+        showSnackbar(data.message || 'Error al eliminar cliente', 'error');
       }
     } catch (error) {
       console.error('Error deleting client:', error);

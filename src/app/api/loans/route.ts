@@ -85,6 +85,8 @@ export async function POST(request: NextRequest) {
         }
       } else if (loanType.modality === 'daily') {
         currentDate = getNextBusinessDay(new Date(existingLoan.start_date as string));
+      } else if (loanType.modality === 'monthly') {
+        currentDate.setMonth(currentDate.getMonth() + 1);
       }
 
       for (let i = 0; i < numPayments; i++) {
@@ -164,7 +166,6 @@ export async function POST(request: NextRequest) {
     const paymentAmount = totalAmount / numPayments;
 
     let currentDate = new Date(start);
-    currentDate.setDate(currentDate.getDate() + 1);
     if (loanType.modality === 'weekly') {
       while (currentDate.getDay() !== 5) {
         currentDate.setDate(currentDate.getDate() + 1);
@@ -173,6 +174,8 @@ export async function POST(request: NextRequest) {
       while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
         currentDate.setDate(currentDate.getDate() + 1);
       }
+    } else if (loanType.modality === 'monthly') {
+      currentDate.setMonth(currentDate.getMonth() + 1);
     }
 
     for (let i = 0; i < numPayments; i++) {

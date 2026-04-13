@@ -26,7 +26,7 @@ export async function GET(
     }
 
     await getDB();
-    const user = await get('SELECT id, username, name, lastname, phone, role, created_at FROM users WHERE id = ?', [parseInt(id)]);
+    const user = await get('SELECT id, username, name, lastname, phone, email, role, created_at FROM users WHERE id = ?', [parseInt(id)]);
     
     if (!user) {
       return NextResponse.json({ message: 'Usuario no encontrado' }, { status: 404 });
@@ -51,7 +51,7 @@ export async function PUT(
 
     await getDB();
     const body = await request.json();
-    const { username, name, lastname, phone, password, role } = body;
+    const { username, name, lastname, phone, email, password, role } = body;
 
     const updates: string[] = [];
     const values: any[] = [];
@@ -78,6 +78,11 @@ export async function PUT(
     if (phone) {
       updates.push('phone = ?');
       values.push(phone);
+    }
+
+    if (email !== undefined) {
+      updates.push('email = ?');
+      values.push(email || null);
     }
 
     if (password) {
