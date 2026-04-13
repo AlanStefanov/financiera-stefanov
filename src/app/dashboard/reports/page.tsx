@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSnackbar } from '@/components/Snackbar';
 
 interface User {
   role: string;
@@ -11,6 +12,9 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User>({ role: 'operator' });
   const [activeTab, setActiveTab] = useState<'operators' | 'collections' | 'overdue'>('operators');
+  const [sendEmailModal, setSendEmailModal] = useState<{ show: boolean; operatorId?: number; operatorName?: string; operatorEmail?: string }>({ show: false });
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const { showSnackbar } = useSnackbar();
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -32,7 +36,7 @@ export default function ReportsPage() {
         if (res.ok) {
           setReportData(data);
         } else {
-          console.error('API error:', data);
+          console.error('API error:', data, 'Status:', res.status);
         }
       } catch (error) {
         console.error('Error fetching reports:', error);
@@ -45,6 +49,61 @@ export default function ReportsPage() {
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value || 0);
+  };
+
+  const sendEmailToOperator = async () => {
+    if (!sendEmailModal.operatorId || !sendEmailModal.operatorEmail) return;
+    setSendingEmail(true);
+    try {
+      const token = localStorage.getItem('token');
+      const operatorOverdue = overduePayments.filter((p: any) => p.operator_name === sendEmailModal.operatorName);
+      const count = operatorOverdue.length;
+      
+      const subject = `Pagos Atrasados - ${count} cliente(s) necesita(n) validación`;
+      const body = `
+      <div style="font-family: Arial, sans-serif; color: #1a1a1a; line-height: 1.5;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 24px;">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <img src="cid:email-image@stefanov" alt="Stefanov" style="max-width: 540px; width: 100%; height: auto; display: block; margin: 0 auto;" />
+          </div>
+          <p style="margin: 0 0 16px; font-size: 16px;"><strong>Buenas</strong>,</p>
+          <p style="margin: 0 0 16px; font-size: 16px;">Tiene <strong>${count}</strong> pago(s) atrasado(s), favor validar con sus clientes.</p>
+          <p style="margin: 0 0 24px; font-size: 16px;"><em>Saludos cordiales</em>,</p>
+          <p style="margin: 0; font-size: 16px;"><strong>Alan Stefanov</strong></p>
+          <p style="margin: 4px 0 0; font-size: 14px; color: #555;">Director General | Microcréditos Stefanov</p>
+          <p style="margin: 16px 0 0; font-size: 14px; color: #555;">📞 Teléfono: +54 9 1127395566</p>
+          <p style="margin: 4px 0 0; font-size: 14px; color: #555;">📍 Gonnet / La Plata, Buenos Aires</p>
+          <p style="margin: 4px 0 0; font-size: 14px; color: #555;">🌐 <a href="https://financiera-stefanov.vercel.app/" style="color: #1a73e8; text-decoration: none;">financiera-stefanov.vercel.app</a></p>
+        </div>
+      </div>`;
+
+      const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({
+          to: sendEmailModal.operatorEmail,
+          subject,
+          body,
+          inlineImage: true,
+        })
+      });
+
+      if (res.ok) {
+        showSnackbar('Email enviado exitosamente');
+      } else {
+        const data = await res.json();
+        showSnackbar(data.message || 'Error al enviar email', 'error');
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      showSnackbar('Error al enviar email', 'error');
+    } finally {
+      setSendingEmail(false);
+      setSendEmailModal({ show: false });
+    }
   };
 
   if (loading) return <div>Cargando...</div>;
@@ -114,6 +173,7 @@ export default function ReportsPage() {
                 <th style={{ textAlign: 'right', padding: '0.75rem' }}>Interés Total</th>
                 <th style={{ textAlign: 'right', padding: '0.75rem' }}>Ganancia Potencial</th>
                 <th style={{ textAlign: 'right', padding: '0.75rem' }}>Ganancia Real</th>
+                <th style={{ textAlign: 'center', padding: '0.75rem' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -125,6 +185,26 @@ export default function ReportsPage() {
                   <td style={{ textAlign: 'right', padding: '0.75rem' }}>{formatCurrency(op.total_interest)}</td>
                   <td style={{ textAlign: 'right', padding: '0.75rem', color: 'var(--success)' }}>{formatCurrency(op.potential_earnings)}</td>
                   <td style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 'bold', color: 'var(--primary)' }}>{formatCurrency(op.actual_earnings)}</td>
+                  <td style={{ textAlign: 'center', padding: '0.75rem' }}>
+                    {op.operator_email ? (
+                      <button
+                        onClick={() => setSendEmailModal({ show: true, operatorId: op.operator_id, operatorName: `${op.operator_name} ${op.operator_lastname}`, operatorEmail: op.operator_email })}
+                        style={{
+                          background: 'var(--primary)',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.5rem 0.75rem',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem'
+                        }}
+                      >
+                        ✉️ Enviar Email
+                      </button>
+                    ) : (
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Sin email</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -201,6 +281,53 @@ export default function ReportsPage() {
               </tbody>
             </table>
           )}
+        </div>
+      )}
+
+      {sendEmailModal.show && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, padding: '1rem'
+        }}>
+          <div style={{
+            background: 'white', borderRadius: '0.5rem', padding: '1.5rem',
+            maxWidth: '450px', width: '100%', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+          }}>
+            <h3 style={{ margin: '0 0 1rem', fontSize: '1.25rem' }}>Enviar Email a Operador</h3>
+            <div style={{ marginBottom: '1rem', padding: '1rem', background: 'var(--background)', borderRadius: 'var(--radius)' }}>
+              <p style={{ margin: 0 }}><strong>Para:</strong> {sendEmailModal.operatorName}</p>
+              <p style={{ margin: '0.5rem 0 0' }}><strong>Email:</strong> {sendEmailModal.operatorEmail}</p>
+            </div>
+            <div style={{ padding: '1rem', background: '#fef3cd', borderRadius: 'var(--radius)', marginBottom: '1rem', whiteSpace: 'pre-line' }}>
+              <strong>Vista previa del mensaje:</strong><br/><br/>
+              <img src="/email-image.png" alt="Stefanov" style={{ maxWidth: '100%', height: 'auto', marginBottom: '1rem' }} /><br/>
+              <strong><em>Buenas</em></strong>,<br/><br/>
+              Tiene {overduePayments.filter((p: any) => p.operator_name === sendEmailModal.operatorName).length} pago(s) atrasado(s), favor validar con sus clientes.<br/><br/>
+              <em>Saludos cordiales</em>,<br/>
+              <strong>Alan Stefanov</strong><br/>
+              Director General | Microcréditos Stefanov<br/><br/>
+              📞 Teléfono: +54 9 1127395566<br/>
+              📍 Ubicación: Gonnet / La Plata, Buenos Aires<br/>
+              🌐 Web: https://financiera-stefanov.vercel.app/
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => setSendEmailModal({ show: false })} 
+                className="btn btn-secondary"
+                disabled={sendingEmail}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={sendEmailToOperator} 
+                className="btn btn-primary"
+                disabled={sendingEmail}
+              >
+                {sendingEmail ? 'Enviando...' : '📧 Enviar Email'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
