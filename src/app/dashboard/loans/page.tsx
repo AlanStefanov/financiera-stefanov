@@ -69,22 +69,39 @@ export default function LoansPage() {
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: number | null }>({ show: false, id: null });
   const { showSnackbar } = useSnackbar();
 
-  const getFirstPaymentMessage = (modality: string) => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const friday = new Date();
-    const dayOfWeek = friday.getDay();
-    const daysUntilFriday = (5 - dayOfWeek + 7) % 7 || 7;
-    friday.setDate(friday.getDate() + daysUntilFriday);
+  const normalizeModality = (modality: string | undefined, loanTypeName?: string) => {
+    const normalized = modality?.toString().toLowerCase().trim();
+    if (normalized === 'daily' || normalized === 'diario') return 'daily';
+    if (normalized === 'weekly' || normalized === 'semanal') return 'weekly';
+    if (normalized === 'monthly' || normalized === 'mensual') return 'monthly';
 
-    if (modality === 'daily') {
-      const tomorrowStr = tomorrow.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
-      return 'Su primera cuota sera manana (' + tomorrowStr + ')';
-    } else if (modality === 'weekly') {
-      const fridayStr = friday.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
-      return 'Su primera cuota sera el ' + fridayStr;
+    const name = loanTypeName?.toString().toLowerCase() || '';
+    if (name.includes('diario')) return 'daily';
+    if (name.includes('semanal')) return 'weekly';
+    if (name.includes('mensual')) return 'monthly';
+
+    return normalized || 'daily';
+  };
+
+  const getFirstPaymentMessage = (modality: string, loanTypeName?: string) => {
+    const normalized = normalizeModality(modality, loanTypeName);
+    const now = new Date();
+    const nextDaily = new Date(now);
+    nextDaily.setDate(now.getDate() + 1);
+    const nextWeekly = new Date(now);
+    nextWeekly.setDate(now.getDate() + 7);
+    const nextMonthly = new Date(now);
+    nextMonthly.setDate(now.getDate() + 28);
+
+    if (normalized === 'daily') {
+      const tomorrowStr = nextDaily.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+      return 'Su primera cuota será mañana (' + tomorrowStr + ')';
+    } else if (normalized === 'weekly') {
+      const nextWeekStr = nextWeekly.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+      return 'Su primera cuota será el ' + nextWeekStr;
     } else {
-      return 'Su primera cuota sera dentro de los proximos 28 dias';
+      const nextMonthStr = nextMonthly.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+      return 'Su primera cuota será dentro de 28 días (' + nextMonthStr + ')';
     }
   };
 
@@ -271,9 +288,10 @@ export default function LoansPage() {
       if (newStatus === 'aprobado' && loan) {
         const operatorDisplay = loan.operator_name || 'el operador de créditos';
         const phone = loan.client_phone.replace(/\D/g, '');
-        const installments = loan.modality === 'daily' ? 20 : loan.modality === 'weekly' ? 4 : Number(loan.duration_months);
+        const loanModality = normalizeModality(loan.modality, loan.loan_type_name);
+        const installments = loanModality === 'daily' ? 20 : loanModality === 'weekly' ? 4 : Number(loan.duration_months);
         const installmentAmount = Math.round(loan.total_amount / installments);
-        const modalityText = loan.modality === 'daily' ? 'Pago Diario' : loan.modality === 'weekly' ? 'Pago Semanal' : 'Pago Mensual';
+        const modalityText = loanModality === 'daily' ? 'Pago Diario' : loanModality === 'weekly' ? 'Pago Semanal' : 'Pago Mensual';
         const endDate = loan.end_date ? new Date(loan.end_date).toLocaleDateString('es-AR') : 'N/A';
         const message = `¡Hola ${loan.client_name}! Tu préstamo ha sido aprobado.\n\nMonto: $${loan.principal_amount.toLocaleString()}\nTotal: $${loan.total_amount.toLocaleString()}\nTipo: ${modalityText}\nCuotas: ${installments} de $${installmentAmount.toLocaleString()}\nFecha de fin: ${endDate}\n\nTu operador de créditos es: ${operatorDisplay}. Comuníquese con él para gestionar los pagos.\n\nGracias por confiar en Microcréditos Stefanov.`;
         window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
@@ -654,7 +672,7 @@ export default function LoansPage() {
             <p><strong>Tipo:</strong> {selectedLoan.loan_type_name}</p>
             {selectedLoan.status === 'orden' && (
               <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#fef3c7', borderRadius: 'var(--radius)', color: '#92400e' }}>
-                {getFirstPaymentMessage(selectedLoan.modality)}
+                {getFirstPaymentMessage(selectedLoan.modality, selectedLoan.loan_type_name)}
               </div>
             )}
           </div>

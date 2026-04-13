@@ -26,10 +26,31 @@ interface User {
   id?: number;
 }
 
+interface OverduePayment {
+  id: number;
+  loan_id: number;
+  payment_number: number;
+  amount: number;
+  due_date: string;
+  client_name: string;
+  client_phone: string;
+  operator_id: number;
+  operator_name: string;
+}
+
+interface OverdueLoanGroup {
+  loanId: number;
+  clientName: string;
+  clientPhone: string;
+  payments: OverduePayment[];
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats>({ totalClients: 0, activeLoans: 0, remainingPayments: 0, totalLoaned: 0, totalCollected: 0, remainingToCollect: 0, pendingLoans: 0, overduePayments: 0 });
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User>({ role: 'operator' });
+  const [overduePayments, setOverduePayments] = useState<OverduePayment[]>([]);
+  const [showOverdueModal, setShowOverdueModal] = useState(false);
   const [loanTypes, setLoanTypes] = useState<LoanType[]>([]);
   const [calcAmount, setCalcAmount] = useState('');
   const [calcType, setCalcType] = useState('');
@@ -48,15 +69,17 @@ export default function DashboardPage() {
         const token = localStorage.getItem('token');
         const headers = { Authorization: `Bearer ${token}` };
 
-        const [clientsRes, loansRes, paymentsRes] = await Promise.all([
+        const [clientsRes, loansRes, paymentsRes, overdueRes] = await Promise.all([
           fetch('/api/clients', { headers }),
           fetch('/api/loans', { headers }),
           fetch('/api/loan-payments', { headers }),
+          fetch('/api/overdue-payments', { headers }),
         ]);
 
         const clients = clientsRes.ok ? await clientsRes.json() : [];
         const loans = loansRes.ok ? await loansRes.json() : [];
         const payments = paymentsRes.ok ? await paymentsRes.json() : [];
+        const overdue = overdueRes.ok ? await overdueRes.json() : [];
 
         const activeAndApprovedLoans = Array.isArray(loans) 
           ? loans.filter((l: any) => l.status === 'aprobado') 
@@ -64,10 +87,8 @@ export default function DashboardPage() {
         
         const activeLoansCount = activeAndApprovedLoans.length;
         
-        const overduePayments = Array.isArray(payments) 
-          ? payments.filter((p: any) => !p.is_paid && new Date(p.due_date) < new Date() && 
-            loans.some((l: any) => l.id === p.loan_id && l.status === 'aprobado')).length
-          : 0;
+        const overduePaymentsCount = Array.isArray(overdue) ? overdue.length : 0;
+        setOverduePayments(Array.isArray(overdue) ? overdue : []);
         
         const totalLoanedSum = activeAndApprovedLoans.reduce((sum: number, l: any) => {
           const principal = parseFloat(l.principal_amount) || 0;
@@ -107,7 +128,7 @@ export default function DashboardPage() {
           totalCollected: totalCollectedSum,
           remainingToCollect: totalToCollectSum,
           pendingLoans: pendingLoansCount,
-          overduePayments,
+          overduePayments: overduePaymentsCount,
         });
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -156,6 +177,21 @@ export default function DashboardPage() {
   };
 
   if (loading) return <div>Cargando...</div>;
+
+  const overdueByLoan: OverdueLoanGroup[] = Object.values(
+    overduePayments.reduce((acc, payment) => {
+      if (!acc[payment.loan_id]) {
+        acc[payment.loan_id] = {
+          loanId: payment.loan_id,
+          clientName: payment.client_name,
+          clientPhone: payment.client_phone,
+          payments: [],
+        };
+      }
+      acc[payment.loan_id].payments.push(payment);
+      return acc;
+    }, {} as Record<number, OverdueLoanGroup>)
+  );
 
   return (
     <div>
@@ -214,10 +250,83 @@ export default function DashboardPage() {
           <div className="card" style={{ border: '2px solid var(--danger)', background: '#fef2f2' }}>
             <h3 style={{ color: 'var(--danger)', fontSize: '0.875rem' }}>⚠️ Pagos Atrasados</h3>
             <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--danger)' }}>{stats.overduePayments}</p>
-            <a href="/dashboard/loans" style={{ fontSize: '0.75rem', color: 'var(--danger)' }}>Ver detalles →</a>
+            <button
+              onClick={() => setShowOverdueModal(true)}
+              style={{
+                fontSize: '0.75rem',
+                color: 'var(--danger)',
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                textDecoration: 'underline',
+              }}
+            >
+              Ver detalles →
+            </button>
           </div>
         )}
       </div>
+
+      {showOverdueModal && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1000, padding: '1rem'
+          }}
+          onClick={() => setShowOverdueModal(false)}
+        >
+          <div
+            className="card"
+            style={{ maxWidth: '1100px', width: '100%', maxHeight: '85vh', overflow: 'auto' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h2 style={{ fontSize: '1.25rem', color: 'var(--danger)' }}>Pagos Atrasados ({stats.overduePayments})</h2>
+              <button onClick={() => setShowOverdueModal(false)} className="btn btn-primary">✕</button>
+            </div>
+
+            {overdueByLoan.length === 0 ? (
+              <p>No hay pagos atrasados para mostrar.</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
+                {overdueByLoan.map((group) => (
+                  <div key={group.loanId} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0.75rem' }}>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <div style={{ fontWeight: 700 }}>Préstamo #{group.loanId}</div>
+                      <div><strong>Cliente:</strong> {group.clientName}</div>
+                      <div><strong>Tel:</strong> {group.clientPhone}</div>
+                    </div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                          <th style={{ textAlign: 'left', padding: '0.35rem 0' }}>Cuota</th>
+                          <th style={{ textAlign: 'right', padding: '0.35rem 0' }}>Monto</th>
+                          <th style={{ textAlign: 'right', padding: '0.35rem 0' }}>Venc.</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {group.payments.map((p) => (
+                          <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '0.35rem 0' }}>#{p.payment_number}</td>
+                            <td style={{ textAlign: 'right', padding: '0.35rem 0', color: 'var(--danger)', fontWeight: 600 }}>
+                              {formatCurrency(p.amount)}
+                            </td>
+                            <td style={{ textAlign: 'right', padding: '0.35rem 0' }}>
+                              {new Date(p.due_date).toLocaleDateString('es-AR')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="card" style={{ marginTop: '1.5rem' }}>
         <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Calculadora de Préstamos</h2>
