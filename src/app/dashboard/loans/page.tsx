@@ -269,10 +269,7 @@ export default function LoansPage() {
       }
       
       if (newStatus === 'aprobado' && loan) {
-        const storedUser = localStorage.getItem('user');
-        const currentUser = storedUser ? JSON.parse(storedUser) : { name: 'el operador', lastname: '', username: '' };
-        const operatorDisplay = currentUser.username ? `${currentUser.name || ''} ${currentUser.lastname || ''} (@${currentUser.username})` : `${currentUser.name || ''} ${currentUser.lastname || ''}`.trim() || 'el operador';
-        
+        const operatorDisplay = loan.operator_name || 'el operador de créditos';
         const phone = loan.client_phone.replace(/\D/g, '');
         const installments = loan.modality === 'daily' ? 20 : loan.modality === 'weekly' ? 4 : Number(loan.duration_months);
         const installmentAmount = Math.round(loan.total_amount / installments);
