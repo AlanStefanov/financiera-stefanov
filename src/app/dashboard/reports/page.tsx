@@ -50,13 +50,20 @@ export default function ReportsPage() {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value || 0);
   };
 
+  const getOperatorOverdueCount = () => {
+    if (!sendEmailModal.operatorId && !sendEmailModal.operatorName) return 0;
+    return overduePayments.filter((p: any) => (
+      (sendEmailModal.operatorId && p.operator_id === sendEmailModal.operatorId) ||
+      (!sendEmailModal.operatorId && sendEmailModal.operatorName && p.operator_name === sendEmailModal.operatorName)
+    )).length;
+  };
+
   const sendEmailToOperator = async () => {
     if (!sendEmailModal.operatorId || !sendEmailModal.operatorEmail) return;
     setSendingEmail(true);
     try {
       const token = localStorage.getItem('token');
-      const operatorOverdue = overduePayments.filter((p: any) => p.operator_id === sendEmailModal.operatorId);
-      const count = operatorOverdue.length;
+      const count = getOperatorOverdueCount();
       
       const subject = `Pagos Atrasados - ${count} cliente(s) necesita(n) validación`;
       const body = `
@@ -314,7 +321,7 @@ export default function ReportsPage() {
               <strong>Vista previa del mensaje:</strong><br/><br/>
               <img src="/email-image.png" alt="Stefanov" style={{ maxWidth: '100%', height: 'auto', marginBottom: '1rem' }} /><br/>
               <strong><em>Buenas</em></strong>,<br/><br/>
-              Tiene {overduePayments.filter((p: any) => p.operator_name === sendEmailModal.operatorName).length} pago(s) atrasado(s), favor validar con sus clientes.<br/><br/>
+              Tiene {getOperatorOverdueCount()} pago(s) atrasado(s), favor validar con sus clientes.<br/><br/>
               <em>Saludos cordiales</em>,<br/>
               <strong>Alan Stefanov</strong><br/>
               Director General | Microcréditos Stefanov<br/><br/>

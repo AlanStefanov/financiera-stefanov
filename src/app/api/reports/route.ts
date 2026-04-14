@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
         l.modality,
         c.name as client_name,
         c.phone as client_phone,
+        u.id as operator_id,
         u.name || ' ' || u.lastname as operator_name,
         u.email as operator_email
       FROM loan_payments lp
