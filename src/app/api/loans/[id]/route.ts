@@ -12,6 +12,15 @@ const verifyToken = (token: string) => {
   }
 };
 
+const getNextBusinessDay = (date: Date): Date => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + 1);
+  while (next.getDay() === 0 || next.getDay() === 6) {
+    next.setDate(next.getDate() + 1);
+  }
+  return next;
+};
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -83,14 +92,18 @@ export async function PUT(
             ? new Date(loan.updated_at as string)
             : new Date(loan.start_date as string));
         let currentDate = new Date(baseDate);
-        currentDate.setDate(currentDate.getDate() + intervalDays);
+        currentDate = loanType.modality === 'daily'
+          ? getNextBusinessDay(currentDate)
+          : new Date(currentDate.setDate(currentDate.getDate() + intervalDays));
 
         for (let i = 0; i < numPayments; i++) {
           await run(
             'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
             [parseInt(id), i + 1, paymentAmount, currentDate.toISOString()]
           );
-          currentDate.setDate(currentDate.getDate() + intervalDays);
+          currentDate = loanType.modality === 'daily'
+            ? getNextBusinessDay(currentDate)
+            : new Date(currentDate.setDate(currentDate.getDate() + intervalDays));
         }
       }
       
@@ -134,14 +147,18 @@ export async function PUT(
           const intervalDays = loanType.modality === 'weekly' ? 7 : loanType.modality === 'monthly' ? 28 : 1;
           
           let currentDate = new Date();
-          currentDate.setDate(currentDate.getDate() + intervalDays);
+          currentDate = loanType.modality === 'daily'
+            ? getNextBusinessDay(currentDate)
+            : new Date(currentDate.setDate(currentDate.getDate() + intervalDays));
 
           for (let i = 0; i < numPayments; i++) {
             await run(
               'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
               [parseInt(id), i + 1, paymentAmount, currentDate.toISOString()]
             );
-            currentDate.setDate(currentDate.getDate() + intervalDays);
+            currentDate = loanType.modality === 'daily'
+              ? getNextBusinessDay(currentDate)
+              : new Date(currentDate.setDate(currentDate.getDate() + intervalDays));
           }
         }
       }
