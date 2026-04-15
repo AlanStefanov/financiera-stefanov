@@ -83,7 +83,7 @@ async function handleValidation() {
     const bcraResult = await fetchBcra(c.cuil);
     const nombreBcra = bcraResult.success ? bcraResult.data?.results?.denominacion || '' : '';
     
-    let status = null;
+    let status: string | null = null;
     let shouldUpdate = false;
     
     if (!bcraResult.success) {
@@ -94,7 +94,28 @@ async function handleValidation() {
       const localNorm = normalizar(c.name);
       const bcraNorm = normalizar(nombreBcra);
       if (localNorm.includes(bcraNorm) || bcraNorm.includes(localNorm)) {
-        status = 'match';
+        // Extraer la peor situación crediticia real (igual que bcra-check)
+        const periodos = bcraResult.data?.results?.periodos || [];
+        if (periodos.length > 0) {
+          const entidades = periodos[0].entidades || [];
+          if (entidades.length > 0) {
+            const worstSituacion = entidades.reduce((worst: number, e: any) => {
+              return Math.max(worst, e.situacion ?? 0);
+            }, 0);
+            switch (worstSituacion) {
+              case 1: status = 'Normal'; break;
+              case 2: status = 'Seguimiento especial'; break;
+              case 3: status = 'Problemas'; break;
+              case 4: status = 'Alto riesgo'; break;
+              case 5: status = 'Irrecuperable'; break;
+              default: status = 'Sin deuda';
+            }
+          } else {
+            status = 'Sin deuda';
+          }
+        } else {
+          status = 'Sin deuda';
+        }
         shouldUpdate = true;
       } else {
         continue;
@@ -111,13 +132,13 @@ async function handleValidation() {
     }
   }
 
-  const matchCount = results.filter(r => r.status === 'match').length;
+  const updatedCount = results.filter(r => r.status !== null).length;
   const skippedCount = total - results.length;
 
   return NextResponse.json({ 
     message: 'BCRA validation completed',
     total,
-    matches: matchCount,
+    updated: updatedCount,
     skipped: skippedCount,
     results
   });
