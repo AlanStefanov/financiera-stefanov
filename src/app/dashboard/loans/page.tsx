@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useSnackbar } from '@/components/Snackbar';
 
 interface Loan {
@@ -68,6 +69,7 @@ export default function LoansPage() {
   const [isMobile, setIsMobile] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: number | null }>({ show: false, id: null });
   const { showSnackbar } = useSnackbar();
+  const searchParams = useSearchParams();
 
   const normalizeModality = (modality: string | undefined, loanTypeName?: string) => {
     const normalized = modality?.toString().toLowerCase().trim();
@@ -143,6 +145,14 @@ export default function LoansPage() {
     }
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const loanId = searchParams.get('loan_id');
+    if (!loanId || loans.length === 0) return;
+    const loan = loans.find(l => l.id === parseInt(loanId));
+    if (loan) handleViewPayments(loan);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loans, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -21,7 +21,9 @@ export async function GET(request: NextRequest) {
     }
 
     const decoded = jwt.verify(token, getJwtSecret()) as { id: number; role: string };
-    
+    const { searchParams } = new URL(request.url);
+    const clientIdParam = searchParams.get('client_id');
+
     let query = `
       SELECT l.*, c.name as client_name, c.phone as client_phone, u.name || ' ' || u.lastname as operator_name,
              lt.name as loan_type_name, lt.modality, lt.duration_months, lt.interest_percentage,
@@ -32,13 +34,19 @@ export async function GET(request: NextRequest) {
       JOIN users u ON l.operator_id = u.id
       JOIN loan_types lt ON l.loan_type_id = lt.id
     `;
-    
+
+    const conditions: string[] = [];
     if (decoded.role !== 'admin') {
-      query += ` WHERE l.operator_id = ${decoded.id}`;
+      conditions.push(`l.operator_id = ${decoded.id}`);
     }
-    
+    if (clientIdParam) {
+      conditions.push(`l.client_id = ${parseInt(clientIdParam)}`);
+    }
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(' AND ')}`;
+    }
     query += ` ORDER BY l.created_at DESC`;
-    
+
     const loans = await all(query);
     return NextResponse.json(loans);
   } catch (error: any) {
