@@ -1,30 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDB, all, run, get } from '@/lib/db';
 import jwt from 'jsonwebtoken';
-import path from 'path';
-import fs from 'fs';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'default_secret_change_in_production';
-
-const saveImage = (base64Data: string, prefix: string): string => {
-  if (!base64Data) return '';
-  
-  const matches = base64Data.match(/^data:([^/]+)\/([^;]+);base64,(.+)$/);
-  if (!matches) return '';
-  
-  const ext = matches[1] === 'image/png' ? 'png' : 'jpg';
-  const filename = `${prefix}_${Date.now()}.${ext}`;
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'dni');
-  
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
-  
-  const buffer = Buffer.from(matches[3], 'base64');
-  fs.writeFileSync(path.join(uploadDir, filename), buffer);
-  
-  return `/uploads/dni/${filename}`;
-};
 
 export async function GET(request: NextRequest) {
   try {
@@ -67,7 +45,7 @@ export async function POST(request: NextRequest) {
     let body;
     try {
       body = await request.json();
-    } catch (parseError) {
+    } catch (_parseError) {
       return NextResponse.json({ message: 'Error: formato de datos inválido' }, { status: 400 });
     }
     

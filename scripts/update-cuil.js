@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { createClient } = require('@libsql/client');
 
 const TURSO_URL = process.env.TURSO_URL;

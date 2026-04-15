@@ -1,3 +1,40 @@
+/* --- Diseño global sofisticado 2026 --- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --font-family-main: 'Inter', 'Roboto', 'Segoe UI', Arial, sans-serif;
+  --color-bg: #f7f8fa;
+  --color-card-bg: #fff;
+  --color-border: #e5e7eb;
+  --color-shadow: 0 4px 24px 0 rgba(30, 41, 59, 0.08);
+  --color-title: #1a202c;
+  --color-subtitle: #64748b;
+  --color-text: #1e293b;
+  --color-success: #16a34a;
+  --color-danger: #dc2626;
+  --color-primary: #2563eb;
+  --color-table-header: #f1f5f9;
+  --color-table-row-alt: #f9fafb;
+  --color-modal-bg: #fff;
+  --color-modal-shadow: 0 8px 32px 0 rgba(30, 41, 59, 0.16);
+}
+
+html, body {
+  font-family: var(--font-family-main);
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family-main);
+  color: var(--color-title);
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+/* --- Fin diseño global sofisticado --- */
+
 :root {
   --primary: #2563eb;
   --primary-dark: #1d4ed8;

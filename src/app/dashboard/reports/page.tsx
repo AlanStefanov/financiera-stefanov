@@ -1,25 +1,94 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-interface User {
-  role: string;
-}
+import styles from './reports.module.css';
 
 export default function ReportsPage() {
   const [reportData, setReportData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User>({ role: 'operator' });
   const [activeTab, setActiveTab] = useState<'operators' | 'collections' | 'overdue'>('operators');
   const [sendEmailModal, setSendEmailModal] = useState<{ show: boolean; operatorId?: number; operatorName?: string; operatorEmail?: string }>({ show: false });
   const [sendingEmail, setSendingEmail] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type?: 'success' | 'error' } | null>(null);
 
+  // Estado de ordenamiento para Cobros
+  const [collectionsSort, setCollectionsSort] = useState<{ field: string; direction: 'asc' | 'desc' }>({ field: '', direction: 'asc' });
+  // Estado de ordenamiento para Atrasados
+  const [overdueSort, setOverdueSort] = useState<{ field: string; direction: 'asc' | 'desc' }>({ field: '', direction: 'asc' });
+
+  // Función para alternar ordenamiento
+  const handleSort = (table: 'collections' | 'overdue', field: string) => {
+    if (table === 'collections') {
+      setCollectionsSort((prev) => {
+        if (prev.field === field) {
+          return { field, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+        } else {
+          return { field, direction: 'asc' };
+        }
+      });
+    } else {
+      setOverdueSort((prev) => {
+        if (prev.field === field) {
+          return { field, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+        } else {
+          return { field, direction: 'asc' };
+        }
+      });
+    }
+  };
+
+  // Función para obtener emoji
+  const getSortEmoji = (table: 'collections' | 'overdue', field: string) => {
+    const sort = table === 'collections' ? collectionsSort : overdueSort;
+    if (sort.field !== field) return '';
+    return sort.direction === 'asc' ? '▲' : '▼';
+  };
+
+  // Ordenar datos de Cobros
+  const getSortedCollections = () => {
+    if (!collectionsSort.field) return (collections as any[]);
+    const sorted = [...(collections as any[])].sort((a, b) => {
+      let aValue = a[collectionsSort.field];
+      let bValue = b[collectionsSort.field];
+      // Fechas
+      if (collectionsSort.field === 'due_date') {
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
+      }
+      // Estado
+      if (collectionsSort.field === 'is_paid') {
+        aValue = aValue ? 1 : 0;
+        bValue = bValue ? 1 : 0;
+      }
+      if (aValue < bValue) return collectionsSort.direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return collectionsSort.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  };
+
+  // Ordenar datos de Atrasados
+  const getSortedOverdue = () => {
+    if (!overdueSort.field) return (overduePayments as any[]);
+    const sorted = [...(overduePayments as any[])].sort((a, b) => {
+      let aValue = a[overdueSort.field];
+      let bValue = b[overdueSort.field];
+      // Fechas
+      if (overdueSort.field === 'due_date') {
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
+      }
+      if (aValue < bValue) return overdueSort.direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return overdueSort.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  };
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       const parsed = JSON.parse(storedUser);
-      setUser(parsed);
       if (parsed.role !== 'admin') {
         window.location.href = '/dashboard';
       }
@@ -112,14 +181,14 @@ export default function ReportsPage() {
     }
   };
 
-  if (loading) return <div>Cargando...</div>;
+  if (loading) return <div className="empty-state">Cargando...</div>;
   if (!reportData) return <div>Error al cargar reportes</div>;
 
   const { operatorEarnings, collections, overduePayments, summary } = reportData;
 
   return (
-    <div>
-      <h1 style={{ marginBottom: '1.5rem' }}>Reportes</h1>
+    <div className={styles['reports-root']}>
+      <h1 className="page-title">Reportes</h1>
       {notification && (
         <div style={{
           marginBottom: '1rem',
@@ -133,94 +202,96 @@ export default function ReportsPage() {
         </div>
       )}
 
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-          <div>
-            <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Total Préstamos</h3>
-            <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{summary.totalLoans}</p>
+      <div className={styles['reports-card']}>
+        <div className={styles['reports-summary-grid']}>
+          <div className={styles['reports-summary-item']}>
+            <h3>Total Préstamos</h3>
+            <p>{summary.totalLoans}</p>
           </div>
-          <div>
-            <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Total Capital</h3>
-            <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatCurrency(summary.totalPrincipal)}</p>
+          <div className={styles['reports-summary-item']}>
+            <h3>Total Capital</h3>
+            <p>{formatCurrency(summary.totalPrincipal)}</p>
           </div>
-          <div>
-            <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Total Intereses</h3>
-            <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--success)' }}>{formatCurrency(summary.totalInterest)}</p>
+          <div className={styles['reports-summary-item']}>
+            <h3>Total Intereses</h3>
+            <p className={styles['success']}>{formatCurrency(summary.totalInterest)}</p>
           </div>
-          <div>
-            <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Pagos a Operadores</h3>
-            <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>{formatCurrency(summary.totalToPayOperators)}</p>
+          <div className={styles['reports-summary-item']}>
+            <h3>Pagos a Operadores</h3>
+            <p className={styles['primary']}>{formatCurrency(summary.totalToPayOperators)}</p>
           </div>
-          <div>
-            <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Pagos Atrasados</h3>
-            <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--danger)' }}>{summary.overdueCount}</p>
+          <div className={styles['reports-summary-item']}>
+            <h3>Pagos Atrasados</h3>
+            <p className={styles['danger']}>{summary.overdueCount}</p>
           </div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+      <div className={styles['reports-tabs']}>
         <button
           onClick={() => setActiveTab('operators')}
-          className={`btn ${activeTab === 'operators' ? 'btn-primary' : 'btn-secondary'}`}
+          className={activeTab === 'operators' ? `${styles['reports-tab-btn']} ${styles['active']}` : styles['reports-tab-btn']}
         >
           Ganancias Operadores
         </button>
         <button
           onClick={() => setActiveTab('collections')}
-          className={`btn ${activeTab === 'collections' ? 'btn-primary' : 'btn-secondary'}`}
+          className={activeTab === 'collections' ? `${styles['reports-tab-btn']} ${styles['active']}` : styles['reports-tab-btn']}
         >
           Cobros
         </button>
         <button
           onClick={() => setActiveTab('overdue')}
-          className={`btn ${activeTab === 'overdue' ? 'btn-primary' : 'btn-secondary'}`}
+          className={activeTab === 'overdue' ? `${styles['reports-tab-btn']} ${styles['active']}` : styles['reports-tab-btn']}
         >
           Atrasados
         </button>
       </div>
 
       {activeTab === 'operators' && (
-        <div className="card">
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Ganancias por Operador</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className={styles['reports-card']}>
+          <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1.2rem', color: 'var(--text)' }}>Ganancias por Operador</h2>
+          <table className={styles['reports-table']}>
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                <th style={{ textAlign: 'left', padding: '0.75rem' }}>Operador</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem' }}>Préstamos</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem' }}>Capital</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem' }}>Interés Total</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem' }}>Ganancia Potencial</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem' }}>Ganancia Real</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem' }}>Acciones</th>
+              <tr>
+                <th>Operador</th>
+                <th style={{ textAlign: 'right' }}>Préstamos</th>
+                <th style={{ textAlign: 'right' }}>Capital</th>
+                <th style={{ textAlign: 'right' }}>Interés Total</th>
+                <th style={{ textAlign: 'right' }}>Ganancia Potencial</th>
+                <th style={{ textAlign: 'right' }}>Ganancia Real</th>
+                <th style={{ textAlign: 'center' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {(operatorEarnings as any[]).map((op) => (
-                <tr key={op.operator_id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '0.75rem' }}>{op.operator_name} {op.operator_lastname}</td>
-                  <td style={{ textAlign: 'right', padding: '0.75rem' }}>{op.total_loans || 0}</td>
-                  <td style={{ textAlign: 'right', padding: '0.75rem' }}>{formatCurrency(op.total_principal)}</td>
-                  <td style={{ textAlign: 'right', padding: '0.75rem' }}>{formatCurrency(op.total_interest)}</td>
-                  <td style={{ textAlign: 'right', padding: '0.75rem', color: 'var(--success)' }}>{formatCurrency(op.potential_earnings)}</td>
-                  <td style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 'bold', color: 'var(--primary)' }}>{formatCurrency(op.actual_earnings)}</td>
-                  <td style={{ textAlign: 'center', padding: '0.75rem' }}>
+                <tr key={op.operator_id}>
+                  <td>{op.operator_name} {op.operator_lastname}</td>
+                  <td style={{ textAlign: 'right' }}>{op.total_loans || 0}</td>
+                  <td style={{ textAlign: 'right' }}>{formatCurrency(op.total_principal)}</td>
+                  <td style={{ textAlign: 'right' }}>{formatCurrency(op.total_interest)}</td>
+                  <td style={{ textAlign: 'right' }}>{formatCurrency(op.potential_earnings)}</td>
+                  <td style={{ textAlign: 'right', fontWeight: 700 }}>{formatCurrency(op.actual_earnings)}</td>
+                  <td style={{ textAlign: 'center' }}>
                     {op.operator_email ? (
                       <button
                         onClick={() => setSendEmailModal({ show: true, operatorId: op.operator_id, operatorName: `${op.operator_name} ${op.operator_lastname}`, operatorEmail: op.operator_email })}
                         style={{
-                          background: 'var(--primary)',
+                          background: '#2563eb',
                           color: 'white',
                           border: 'none',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '4px',
+                          padding: '0.5rem 0.9rem',
+                          borderRadius: '6px',
                           cursor: 'pointer',
-                          fontSize: '0.75rem'
+                          fontSize: '0.95rem',
+                          fontWeight: 600,
+                          boxShadow: '0 2px 8px 0 rgba(37,99,235,0.08)'
                         }}
                       >
                         ✉️ Enviar Email
                       </button>
                     ) : (
-                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Sin email</span>
+                      <span style={{ color: '#94a3b8', fontSize: '0.95rem' }}>Sin email</span>
                     )}
                   </td>
                 </tr>
@@ -231,35 +302,35 @@ export default function ReportsPage() {
       )}
 
       {activeTab === 'collections' && (
-        <div className="card">
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Historial de Cobros</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className={styles['reports-card']}>
+          <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1.2rem', color: 'var(--text)' }}>Historial de Cobros</h2>
+          <table className={styles['reports-table']}>
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                <th style={{ textAlign: 'left', padding: '0.75rem' }}>Cliente</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem' }}>Operador</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem' }}>Monto</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem' }}>Pagado</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem' }}>Vencimiento</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem' }}>Estado</th>
+              <tr>
+                <th>Cliente</th>
+                <th data-sortable onClick={() => handleSort('collections', 'operator_name')}>
+                  Operador {getSortEmoji('collections', 'operator_name')}
+                </th>
+                <th style={{ textAlign: 'right' }}>Monto</th>
+                <th style={{ textAlign: 'right' }}>Pagado</th>
+                <th data-sortable onClick={() => handleSort('collections', 'due_date')}>
+                  Vencimiento {getSortEmoji('collections', 'due_date')}
+                </th>
+                <th data-sortable onClick={() => handleSort('collections', 'is_paid')}>
+                  Estado {getSortEmoji('collections', 'is_paid')}
+                </th>
               </tr>
             </thead>
             <tbody>
-              {(collections as any[]).slice(0, 50).map((c) => (
-                <tr key={c.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '0.75rem' }}>{c.client_name}</td>
-                  <td style={{ padding: '0.75rem' }}>{c.operator_name}</td>
-                  <td style={{ textAlign: 'right', padding: '0.75rem' }}>{formatCurrency(c.amount)}</td>
-                  <td style={{ textAlign: 'right', padding: '0.75rem' }}>{formatCurrency(c.paid_amount)}</td>
-                  <td style={{ padding: '0.75rem' }}>{new Date(c.due_date).toLocaleDateString('es-AR')}</td>
-                  <td style={{ padding: '0.75rem' }}>
-                    <span style={{
-                      padding: '0.2rem 0.5rem',
-                      borderRadius: '3px',
-                      fontSize: '0.75rem',
-                      background: c.is_paid ? '#dcfce7' : '#fee2e2',
-                      color: c.is_paid ? '#16a34a' : '#dc2626',
-                    }}>
+              {getSortedCollections().slice(0, 50).map((c) => (
+                <tr key={c.id}>
+                  <td>{c.client_name}</td>
+                  <td>{c.operator_name}</td>
+                  <td style={{ textAlign: 'right' }}>{formatCurrency(c.amount)}</td>
+                  <td style={{ textAlign: 'right' }}>{formatCurrency(c.paid_amount)}</td>
+                  <td>{new Date(c.due_date).toLocaleDateString('es-AR')}</td>
+                  <td>
+                    <span className={c.is_paid ? `${styles['reports-status']} ${styles['paid']}` : styles['reports-status']}>
                       {c.is_paid ? 'Pagado' : 'Pendiente'}
                     </span>
                   </td>
@@ -271,29 +342,33 @@ export default function ReportsPage() {
       )}
 
       {activeTab === 'overdue' && (
-        <div className="card">
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--danger)' }}>Pagos Atrasados</h2>
+        <div className={styles['reports-card']}>
+          <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1.2rem', color: 'var(--danger)' }}>Pagos Atrasados</h2>
           {(overduePayments as any[]).length === 0 ? (
             <p>No hay pagos atrasados</p>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table className={styles['reports-table']}>
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ textAlign: 'left', padding: '0.75rem' }}>Cliente</th>
-                  <th style={{ textAlign: 'left', padding: '0.75rem' }}>Teléfono</th>
-                  <th style={{ textAlign: 'left', padding: '0.75rem' }}>Operador</th>
-                  <th style={{ textAlign: 'right', padding: '0.75rem' }}>Monto</th>
-                  <th style={{ textAlign: 'left', padding: '0.75rem' }}>Vencido</th>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Teléfono</th>
+                  <th data-sortable onClick={() => handleSort('overdue', 'operator_name')}>
+                    Operador {getSortEmoji('overdue', 'operator_name')}
+                  </th>
+                  <th style={{ textAlign: 'right' }}>Monto</th>
+                  <th data-sortable onClick={() => handleSort('overdue', 'due_date')}>
+                    Vencido {getSortEmoji('overdue', 'due_date')}
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {(overduePayments as any[]).map((p) => (
-                  <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '0.75rem' }}>{p.client_name}</td>
-                    <td style={{ padding: '0.75rem' }}>{p.client_phone}</td>
-                    <td style={{ padding: '0.75rem' }}>{p.operator_name}</td>
-                    <td style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 'bold', color: 'var(--danger)' }}>{formatCurrency(p.amount)}</td>
-                    <td style={{ padding: '0.75rem', color: 'var(--danger)' }}>{new Date(p.due_date).toLocaleDateString('es-AR')}</td>
+                {getSortedOverdue().map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.client_name}</td>
+                    <td>{p.client_phone}</td>
+                    <td>{p.operator_name}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 700 }}>{formatCurrency(p.amount)}</td>
+                    <td style={{ color: '#dc2626', fontWeight: 600 }}>{new Date(p.due_date).toLocaleDateString('es-AR')}</td>
                   </tr>
                 ))}
               </tbody>
@@ -308,17 +383,15 @@ export default function ReportsPage() {
           background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 1000, padding: '1rem'
         }}>
-          <div style={{
-            background: 'white', borderRadius: '0.5rem', padding: '1.5rem',
-            maxWidth: '450px', width: '100%', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-          }}>
-            <h3 style={{ margin: '0 0 1rem', fontSize: '1.25rem' }}>Enviar Email a Operador</h3>
-            <div style={{ marginBottom: '1rem', padding: '1rem', background: 'var(--background)', borderRadius: 'var(--radius)' }}>
-              <p style={{ margin: 0 }}><strong>Para:</strong> {sendEmailModal.operatorName}</p>
-              <p style={{ margin: '0.5rem 0 0' }}><strong>Email:</strong> {sendEmailModal.operatorEmail}</p>
+          <div className={styles['reports-modal']}>
+            <h3 className={styles['reports-modal-header']}>Enviar Email a Operador</h3>
+            <div style={{ marginBottom: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '12px' }}>
+              <p className={styles['reports-modal-label']} style={{ margin: 0 }}><strong>Para:</strong> <span className={styles['reports-modal-value']}>{sendEmailModal.operatorName}</span></p>
+              <p className={styles['reports-modal-label']} style={{ margin: '0.5rem 0 0' }}><strong>Email:</strong> <span className={styles['reports-modal-value']}>{sendEmailModal.operatorEmail}</span></p>
             </div>
-            <div style={{ padding: '1rem', background: '#fef3cd', borderRadius: 'var(--radius)', marginBottom: '1rem', whiteSpace: 'pre-line' }}>
+            <div className={styles['reports-modal-preview']} style={{ whiteSpace: 'pre-line' }}>
               <strong>Vista previa del mensaje:</strong><br/><br/>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/email-image.png" alt="Stefanov" style={{ maxWidth: '100%', height: 'auto', marginBottom: '1rem' }} /><br/>
               <strong><em>Buenas</em></strong>,<br/><br/>
               Tiene {getOperatorOverdueCount()} pago(s) atrasado(s), favor validar con sus clientes.<br/><br/>
@@ -332,14 +405,14 @@ export default function ReportsPage() {
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
               <button 
                 onClick={() => setSendEmailModal({ show: false })} 
-                className="btn btn-secondary"
+                className={styles['reports-tab-btn']}
                 disabled={sendingEmail}
               >
                 Cancelar
               </button>
-              <button 
+              <button
                 onClick={sendEmailToOperator} 
-                className="btn btn-primary"
+                className={styles['reports-tab-btn'] + ' ' + styles['active']}
                 disabled={sendingEmail}
               >
                 {sendingEmail ? 'Enviando...' : '📧 Enviar Email'}

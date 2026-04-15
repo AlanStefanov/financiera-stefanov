@@ -28,8 +28,7 @@ export default function ClientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', address: '', cuil: '', dni_front: '', dni_back: '' });
-  const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [consultingBcra, setConsultingBcra] = useState(false);
+
   const [confirmDelete, setConfirmDelete] = useState(false);
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
@@ -62,6 +61,7 @@ export default function ClientDetailPage() {
 
   useEffect(() => {
     fetchClient();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
   const compressImage = (base64Data: string, maxSizeKB: number = 512): Promise<string> => {
@@ -144,46 +144,6 @@ export default function ClientDetailPage() {
     }
   };
 
-  const handleConsultBcra = async () => {
-    if (!client?.cuil) {
-      alert('El cliente no tiene CUIL registrado');
-      return;
-    }
-
-    setConsultingBcra(true);
-
-    try {
-      const res = await fetch('/api/bcra-check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cuil: client.cuil })
-      });
-      
-      const data = await res.json();
-      setConsultingBcra(false);
-      
-      if (res.ok && data.status) {
-        await fetch(`/api/clients/${params.id}`, {
-          method: 'PUT',
-          headers: { 
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({ bcra_status: data.status })
-        });
-        fetchClient();
-        alert(`Estado BCRA: ${data.status}\nTotal deuda: $${data.totalDeuda?.toFixed(2) || 0}\nEntidades: ${data.entidades?.length || 0}`);
-      } else {
-        const errMsg = data.message || data.error || 'Error al consultar BCRA';
-        alert(errMsg + (data.trying ? ' (El servicio está temporalmente no disponible, intente más tarde)' : ''));
-      }
-    } catch (error) {
-      setConsultingBcra(false);
-      console.error('BCRA check error:', error);
-      alert('Error al consultar BCRA');
-    }
-  };
-
   const handleDelete = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -229,18 +189,6 @@ export default function ClientDetailPage() {
       <button onClick={() => router.push('/dashboard/clients')} className="btn btn-secondary" style={{ marginBottom: '1rem' }}>
         ← Volver
       </button>
-
-      {formMessage && (
-        <div style={{ 
-          padding: '0.75rem 1rem', 
-          marginBottom: '1rem', 
-          borderRadius: 'var(--radius)',
-          background: formMessage.type === 'success' ? 'var(--success)' : 'var(--danger)',
-          color: 'white'
-        }}>
-          {formMessage.text}
-        </div>
-      )}
 
       {editing ? (
         <div className="card">
@@ -297,6 +245,7 @@ export default function ClientDetailPage() {
                 />
                 {(client.dni_front || form.dni_front) && (
                   <div style={{ marginTop: '0.5rem' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={form.dni_front || client.dni_front} alt="DNI frente" style={{ width: '200px', maxWidth: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
                   </div>
                 )}
@@ -312,6 +261,7 @@ export default function ClientDetailPage() {
                 />
                 {(client.dni_back || form.dni_back) && (
                   <div style={{ marginTop: '0.5rem' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={form.dni_back || client.dni_back} alt="DNI dorso" style={{ width: '200px', maxWidth: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
                   </div>
                 )}

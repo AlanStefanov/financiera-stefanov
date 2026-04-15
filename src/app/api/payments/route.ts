@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDB, all, run, get } from '@/lib/db';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'default_secret_change_in_production';
 
 export async function GET(request: NextRequest) {
   try {
