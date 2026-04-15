@@ -46,7 +46,8 @@ export default function ClientDetailPage() {
   const backInputRef = useRef<HTMLInputElement>(null);
   const { showSnackbar } = useSnackbar();
 
-  const fetchLoans = async (clientId: string | string[]) => {
+  const fetchLoans = async (clientId: string | string[] | undefined) => {
+    if (!clientId) return;
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/loans?client_id=${clientId}`, {
