@@ -349,21 +349,12 @@ export default function LoansPage() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'orden': return { bg: '#fef3c7', color: '#d97706' };
-      case 'aprobado': return { bg: '#dbeafe', color: '#2563eb' };
-      case 'finalizado': return { bg: '#dcfce7', color: '#16a34a' };
-      default: return { bg: '#f1f5f9', color: '#64748b' };
-    }
-  };
-
-  if (loading) return <div>Cargando...</div>;
+  if (loading) return <div className="empty-state">Cargando...</div>;
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h1>Préstamos</h1>
+        <h1 className="page-title">Préstamos</h1>
         <button onClick={() => setShowForm(!showForm)} className="btn btn-primary">
           {showForm ? 'Cancelar' : 'Nuevo Préstamo'}
         </button>
@@ -392,8 +383,8 @@ export default function LoansPage() {
             ) : (
               <form onSubmit={handleSubmit}>
                 <div style={{ display: 'grid', gap: '1rem' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Cliente</label>
+                  <div className="form-group">
+                    <label className="form-label">Cliente</label>
                     <select
                       className="input"
                       value={formData.client_id}
@@ -406,8 +397,8 @@ export default function LoansPage() {
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Tipo de Préstamo</label>
+                  <div className="form-group">
+                    <label className="form-label">Tipo de Préstamo</label>
                     <select
                       className="input"
                       value={formData.loan_type_id}
@@ -422,8 +413,8 @@ export default function LoansPage() {
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monto Principal</label>
+                  <div className="form-group">
+                    <label className="form-label">Monto Principal</label>
                     <input
                       type="number"
                       step="0.01"
@@ -471,8 +462,8 @@ export default function LoansPage() {
                       );
                     })()
                   )}
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Fecha de Inicio</label>
+                  <div className="form-group">
+                    <label className="form-label">Fecha de Inicio</label>
                     <input
                       type="date"
                       className="input"
@@ -520,7 +511,6 @@ export default function LoansPage() {
               </tr>
             ) : (
               loans.map((loan) => {
-                const statusStyle = getStatusColor(loan.status);
                 return (
                   <tr key={loan.id}>
                     <td data-label="ID">{loan.id}</td>
@@ -547,12 +537,10 @@ export default function LoansPage() {
                     </td>
                     <td data-label="Fin">{loan.end_date ? new Date(loan.end_date).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) : '-'}</td>
                     <td data-label="Estado">
-                      <span style={{
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '4px',
-                        background: statusStyle.bg,
-                        color: statusStyle.color,
-                      }}>
+                      <span className={`badge ${
+                        loan.status === 'orden' ? 'badge-warning' :
+                        loan.status === 'aprobado' ? 'badge-success' : 'badge-secondary'
+                      }`}>
                         {loan.status === 'orden' ? 'Orden' : loan.status === 'aprobado' ? 'Aprobado' : 'Finalizado'}
                       </span>
                     </td>
@@ -630,13 +618,7 @@ export default function LoansPage() {
                     <td>${payment.amount.toFixed(2)}</td>
                     <td>{new Date(payment.due_date).toLocaleDateString('es-AR')}</td>
                     <td>
-                      <span style={{ 
-                        padding: '0.125rem 0.25rem', 
-                        borderRadius: '3px', 
-                        background: payment.is_paid ? '#dcfce7' : '#fee2e2',
-                        color: payment.is_paid ? '#16a34a' : '#dc2626',
-                        fontSize: '0.625rem'
-                      }}>
+                      <span className={`badge ${payment.is_paid ? 'badge-success' : 'badge-danger'}`}>
                         {payment.is_paid ? 'Pagado' : 'Pendiente'}
                       </span>
                     </td>
@@ -702,14 +684,9 @@ export default function LoansPage() {
                       </td>
                       <td data-label="Fecha">{new Date(payment.due_date).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</td>
                       <td data-label="Estado">
-                        <span style={{
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '4px',
-                          background: payment.is_paid ? '#dcfce7' : '#fee2e2',
-                          color: payment.is_paid ? '#16a34a' : '#dc2626',
-                        }}>
-                          {payment.is_paid ? 'Pagado' : 'Pendiente'}
-                        </span>
+                      <span className={`badge ${payment.is_paid ? 'badge-success' : 'badge-danger'}`}>
+                        {payment.is_paid ? 'Pagado' : 'Pendiente'}
+                      </span>
                       </td>
                       <td data-label="Acciones" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         {!payment.is_paid && new Date(payment.due_date) < new Date() && user.role !== 'admin' && selectedLoan && (
@@ -799,15 +776,12 @@ export default function LoansPage() {
           background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 1000, padding: '1rem'
         }}>
-          <div style={{
-            background: 'white', borderRadius: '0.5rem', padding: '1.5rem',
-            maxWidth: '400px', width: '100%', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-          }}>
-            <h3 style={{ margin: '0 0 1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
-            <p style={{ margin: '0 0 1.5rem', color: '#666' }}>
+          <div className="card" style={{ maxWidth: '400px', width: '100%' }}>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
+            <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
               ¿Estás seguro de que deseas eliminar este préstamo? Esta acción no se puede deshacer.
             </p>
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+            <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
               <button onClick={() => setConfirmDelete({ show: false, id: null })} className="btn btn-secondary">
                 Cancelar
               </button>

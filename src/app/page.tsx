@@ -49,6 +49,7 @@ export default function LoginPage() {
             marginBottom: '1.5rem',
             cursor: 'pointer'
           }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src="/logo.png" 
               alt="Stefanov"

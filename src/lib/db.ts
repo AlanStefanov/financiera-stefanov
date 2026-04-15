@@ -1,4 +1,5 @@
 import { createClient, Client } from '@libsql/client';
+import bcrypt from 'bcryptjs';
 
 let client: Client | null = null;
 let dbInitialized = false;
@@ -270,7 +271,6 @@ export const initializeDatabase = async () => {
 
   const adminResult = await getClient().execute("SELECT COUNT(*) as count FROM users WHERE username = 'admin'");
   if (adminResult.rows[0]?.count === 0) {
-    const bcrypt = require('bcryptjs');
     const hashedPassword = bcrypt.hashSync('Dr@wssap1234k', 10);
     await getClient().execute('INSERT INTO users (username, name, lastname, phone, password, role) VALUES (?, ?, ?, ?, ?, ?)', ['admin', 'Admin', 'Sistema', '1122334455', hashedPassword, 'admin']);
   }

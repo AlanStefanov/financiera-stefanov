@@ -22,6 +22,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!storedUser) {
       window.location.href = '/';
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUser(JSON.parse(storedUser));
       setLoading(false);
     }
@@ -73,6 +74,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <header className="header">
         <div className="container header-content">
           <Link href="/dashboard" className="header-logo">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src="/logo.png" 
               alt="Stefanov"

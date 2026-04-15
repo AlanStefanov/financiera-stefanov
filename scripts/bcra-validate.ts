@@ -1,5 +1,4 @@
 import { createClient } from '@libsql/client';
-import crypto from 'crypto';
 
 const TURSO_URL = process.env.TURSO_URL;
 const TURSO_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN;

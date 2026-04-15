@@ -176,7 +176,7 @@ export default function DashboardPage() {
     });
   };
 
-  if (loading) return <div>Cargando...</div>;
+  if (loading) return <div className="empty-state">Cargando...</div>;
 
   const overdueByLoan: OverdueLoanGroup[] = Object.values(
     overduePayments.reduce((acc, payment) => {
@@ -195,19 +195,10 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h1 style={{ marginBottom: '1.5rem' }}>Dashboard</h1>
+      <h1 className="page-title">Dashboard</h1>
 
       {user.role === 'admin' && stats.pendingLoans > 0 && (
-        <div style={{ 
-          background: '#fef3c7', 
-          border: '1px solid #f59e0b', 
-          borderRadius: 'var(--radius)', 
-          padding: '1rem', 
-          marginBottom: '1.5rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}>
+        <div className="card" style={{ background: '#fef3c7', border: '1px solid #f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2">
               <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
@@ -216,51 +207,34 @@ export default function DashboardPage() {
               Tienes {stats.pendingLoans} préstamo{stats.pendingLoans > 1 ? 's' : ''} pendiente{stats.pendingLoans > 1 ? 's' : ''} de aprobación
             </span>
           </div>
-          <a href="/dashboard/loans" style={{ 
-            background: '#d97706', 
-            color: 'white', 
-            padding: '0.5rem 1rem', 
-            borderRadius: 'var(--radius)',
-            textDecoration: 'none',
-            fontWeight: '500',
-            fontSize: '0.875rem'
-          }}>
+          <a href="/dashboard/loans" className="btn btn-secondary" style={{ background: '#d97706', color: 'white', border: 'none' }}>
             Ver Préstamos
           </a>
         </div>
       )}
-      
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+
+      {/* Fila 1: Actividad operativa */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
         <div className="card">
-          <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Total Clientes</h3>
+          <h3 className="form-label">Total Clientes</h3>
           <p style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.totalClients}</p>
         </div>
-        
         <div className="card">
-          <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Préstamos Activos</h3>
+          <h3 className="form-label">Préstamos Activos</h3>
           <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>{stats.activeLoans}</p>
         </div>
-        
         <div className="card">
-          <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Pagos Restantes</h3>
+          <h3 className="form-label">Pagos Restantes</h3>
           <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>{stats.remainingPayments}</p>
         </div>
-
         {user.role !== 'admin' && stats.overduePayments > 0 && (
           <div className="card" style={{ border: '2px solid var(--danger)', background: '#fef2f2' }}>
-            <h3 style={{ color: 'var(--danger)', fontSize: '0.875rem' }}>⚠️ Pagos Atrasados</h3>
+            <h3 className="form-label" style={{ color: 'var(--danger)' }}>⚠️ Pagos Atrasados</h3>
             <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--danger)' }}>{stats.overduePayments}</p>
             <button
               onClick={() => setShowOverdueModal(true)}
-              style={{
-                fontSize: '0.75rem',
-                color: 'var(--danger)',
-                background: 'transparent',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-                textDecoration: 'underline',
-              }}
+              className="btn btn-secondary"
+              style={{ color: 'var(--danger)', background: 'transparent', border: 'none', fontSize: '0.85rem', textDecoration: 'underline', marginTop: '0.5rem' }}
             >
               Ver detalles →
             </button>
@@ -349,61 +323,44 @@ export default function DashboardPage() {
               onChange={(e) => setCalcType(e.target.value)}
             >
               <option value="">Seleccionar tipo</option>
-              {loanTypes.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} ({t.interest_percentage}% interés)
+              {loanTypes.map((lt) => (
+                <option key={lt.id} value={lt.id}>
+                  {lt.name} ({lt.modality}, {lt.interest_percentage}% interés)
                 </option>
               ))}
             </select>
           </div>
-          <button onClick={calculateLoan} className="btn btn-primary">
-            Calcular
-          </button>
+          <div>
+            <button className="btn btn-primary" style={{ width: '100%' }} onClick={calculateLoan} disabled={!calcAmount || !calcType}>
+              Calcular
+            </button>
+          </div>
         </div>
-
         {calcResult && (
-          <div style={{ 
-            marginTop: '1rem', 
-            padding: '1rem', 
-            background: 'var(--background)', 
-            borderRadius: 'var(--radius)',
-            border: '1px solid var(--primary)'
-          }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.9rem' }}>
-              <div>Monto solicitado:</div>
-              <div style={{ fontWeight: 'bold' }}>{formatCurrency(parseFloat(calcAmount))}</div>
-              <div>Total a pagar:</div>
-              <div style={{ fontWeight: 'bold', color: 'var(--danger)' }}>{formatCurrency(calcResult.total)}</div>
-              <div>Número de cuotas:</div>
-              <div>{calcResult.installments} cuotas</div>
-              <div>Valor de cada cuota:</div>
-              <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>{formatCurrency(calcResult.payment)}</div>
-            </div>
+          <div style={{ marginTop: '1.5rem' }}>
+            <h4 style={{ marginBottom: '0.5rem' }}>Resultado</h4>
+            <div>Total a pagar: <strong>{formatCurrency(calcResult.total)}</strong></div>
+            <div>Cuotas: <strong>{calcResult.installments}</strong></div>
+            <div>Monto por cuota: <strong>{formatCurrency(calcResult.payment)}</strong></div>
           </div>
         )}
       </div>
 
-      {user.role === 'admin' && (
-        <div style={{ marginTop: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Resumen Financiero</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-            <div className="card">
-              <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Total Prestado</h3>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--danger)' }}>{formatCurrency(stats.totalLoaned)}</p>
-            </div>
-            
-            <div className="card">
-              <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Total Cobrado</h3>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>{formatCurrency(stats.totalCollected)}</p>
-            </div>
-            
-            <div className="card">
-              <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Falta Cobrar</h3>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>{formatCurrency(stats.remainingToCollect)}</p>
-            </div>
-          </div>
+      {/* Fila 2: Resumen financiero */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
+        <div className="card">
+          <h3 className="form-label">Dinero Prestado</h3>
+          <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>{formatCurrency(stats.totalLoaned)}</p>
         </div>
-      )}
+        <div className="card">
+          <h3 className="form-label">Total Cobrado</h3>
+          <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>{formatCurrency(stats.totalCollected)}</p>
+        </div>
+        <div className="card">
+          <h3 className="form-label">Por Cobrar</h3>
+          <p style={{ fontSize: '2rem', fontWeight: 'bold', color: '#f59e0b' }}>{formatCurrency(stats.remainingToCollect)}</p>
+        </div>
+      </div>
 
       {user.role !== 'admin' && (
         <EarningsCard userId={user.id} />
@@ -435,7 +392,7 @@ function EarningsCard({ userId }: { userId?: number }) {
     fetchEarnings();
   }, [userId]);
 
-  if (loading) return <div>Cargando...</div>;
+  if (loading) return <div className="empty-state">Cargando...</div>;
   if (!earnings?.summary) return null;
 
   const { summary } = earnings;

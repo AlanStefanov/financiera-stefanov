@@ -33,7 +33,6 @@ export default function ClientsPage() {
   const [user, setUser] = useState<User>({ role: 'operator' });
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [form, setForm] = useState({ name: '', phone: '', address: '', dni_front: '', dni_back: '', cuil: '' });
-  const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [consultingBcra, setConsultingBcra] = useState<number | null>(null);
   const [consultingMassive, setConsultingMassive] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: number | null }>({ show: false, id: null });
@@ -286,11 +285,10 @@ export default function ClientsPage() {
     setForm({ name: '', phone: '', address: '', dni_front: '', dni_back: '', cuil: '' });
     setEditingClient(null);
     setShowForm(false);
-    setFormMessage(null);
   };
   
 
-  if (loading) return <div>Cargando...</div>;
+  if (loading) return <div className="empty-state">Cargando...</div>;
 
   return (
     <div>
@@ -315,17 +313,7 @@ export default function ClientsPage() {
 
       {showForm && (
         <div className="card" style={{ marginBottom: '1.5rem' }}>
-          {formMessage && (
-            <div style={{ 
-              padding: '0.75rem 1rem', 
-              marginBottom: '1rem', 
-              borderRadius: 'var(--radius)',
-              background: formMessage.type === 'success' ? 'var(--success)' : 'var(--danger)',
-              color: 'white'
-            }}>
-              {formMessage.text}
-            </div>
-          )}
+          <h3 style={{ marginBottom: '1rem' }}>{editingClient ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
           <form onSubmit={handleSubmit}>
             <div className="form-grid">
               <div className="form-group">
@@ -594,15 +582,12 @@ export default function ClientsPage() {
           background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 1000, padding: '1rem'
         }}>
-          <div style={{
-            background: 'white', borderRadius: '0.5rem', padding: '1.5rem',
-            maxWidth: '400px', width: '100%', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-          }}>
-            <h3 style={{ margin: '0 0 1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
-            <p style={{ margin: '0 0 1.5rem', color: '#666' }}>
+          <div className="card" style={{ maxWidth: '400px', width: '100%' }}>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
+            <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
               ¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.
             </p>
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+            <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
               <button onClick={() => setConfirmDelete({ show: false, id: null })} className="btn btn-secondary">
                 Cancelar
               </button>

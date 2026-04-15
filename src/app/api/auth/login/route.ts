@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDB, get, run, all } from '@/lib/db';
+import { getDB, get } from '@/lib/db';
 import { getJwtSecret } from '@/lib/auth';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
