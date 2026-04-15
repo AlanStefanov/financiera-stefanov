@@ -21,6 +21,17 @@ interface Client {
   created_at: string;
 }
 
+interface Loan {
+  id: number;
+  status: string;
+  principal_amount: number;
+  total_amount: number;
+  loan_type_name: string;
+  start_date: string;
+  payment_count: number;
+  paid_count: number;
+}
+
 export default function ClientDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -29,10 +40,26 @@ export default function ClientDetailPage() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', address: '', cuil: '', dni_front: '', dni_back: '' });
 
+  const [loans, setLoans] = useState<Loan[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
   const { showSnackbar } = useSnackbar();
+
+  const fetchLoans = async (clientId: string | string[]) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/loans?client_id=${clientId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLoans(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Error fetching loans:', error);
+    }
+  };
 
   const fetchClient = async () => {
     try {
@@ -61,6 +88,7 @@ export default function ClientDetailPage() {
 
   useEffect(() => {
     fetchClient();
+    fetchLoans(params.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
@@ -359,6 +387,103 @@ export default function ClientDetailPage() {
             ) : (
               <p style={{ color: 'var(--text-secondary)' }}>Sin consulta registrada</p>
             )}
+          </div>
+
+          {/* Préstamos */}
+          <div className="card">
+            <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+              Préstamos
+            </h3>
+            {loans.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)' }}>No dispone de préstamos.</p>
+            ) : (() => {
+              const activos = loans.filter(l => l.status === 'orden' || l.status === 'aprobado');
+              const finalizados = loans.filter(l => l.status === 'finalizado');
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {activos.length > 0 && (
+                    <div>
+                      <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Activos
+                      </p>
+                      <div style={{ display: 'grid', gap: '0.5rem' }}>
+                        {activos.map(loan => {
+                          const pendingPayments = (loan.payment_count ?? 0) - (loan.paid_count ?? 0);
+                          return (
+                            <button
+                              key={loan.id}
+                              onClick={() => router.push(`/dashboard/loans?loan_id=${loan.id}`)}
+                              style={{
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                padding: '0.75rem 1rem', border: '1px solid var(--border)',
+                                borderRadius: 'var(--radius)', background: 'var(--surface)',
+                                cursor: 'pointer', textAlign: 'left', width: '100%',
+                                transition: 'background 0.15s',
+                              }}
+                              onMouseEnter={e => (e.currentTarget.style.background = 'var(--background)')}
+                              onMouseLeave={e => (e.currentTarget.style.background = 'var(--surface)')}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <span style={{
+                                  background: loan.status === 'aprobado' ? '#dbeafe' : '#fef9c3',
+                                  color: loan.status === 'aprobado' ? 'var(--primary)' : '#92400e',
+                                  padding: '0.2rem 0.6rem', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 700,
+                                }}>
+                                  {loan.status === 'aprobado' ? 'Aprobado' : 'Orden'}
+                                </span>
+                                <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Préstamo #{loan.id}</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{loan.loan_type_name} — ${loan.principal_amount?.toFixed(2)}</span>
+                              </div>
+                              <span style={{ fontSize: '0.875rem', color: pendingPayments > 0 ? 'var(--danger)' : 'var(--success)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                {pendingPayments > 0 ? `Adeuda ${pendingPayments} cuota${pendingPayments !== 1 ? 's' : ''}` : 'Al día'}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {finalizados.length > 0 && (
+                    <div>
+                      <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Finalizados
+                      </p>
+                      <div style={{ display: 'grid', gap: '0.5rem' }}>
+                        {finalizados.map(loan => (
+                          <button
+                            key={loan.id}
+                            onClick={() => router.push(`/dashboard/loans?loan_id=${loan.id}`)}
+                            style={{
+                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                              padding: '0.75rem 1rem', border: '1px solid var(--border)',
+                              borderRadius: 'var(--radius)', background: 'var(--surface)',
+                              cursor: 'pointer', textAlign: 'left', width: '100%',
+                              opacity: 0.7, transition: 'opacity 0.15s',
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                            onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <span style={{
+                                background: '#f1f5f9', color: 'var(--text-secondary)',
+                                padding: '0.2rem 0.6rem', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 700,
+                              }}>
+                                Finalizado
+                              </span>
+                              <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Préstamo #{loan.id}</span>
+                              <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{loan.loan_type_name} — ${loan.principal_amount?.toFixed(2)}</span>
+                            </div>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                              {new Date(loan.start_date).toLocaleDateString('es-AR')}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* DNI */}
