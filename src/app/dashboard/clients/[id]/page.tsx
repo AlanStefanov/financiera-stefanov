@@ -273,26 +273,124 @@ export default function ClientDetailPage() {
           </form>
         </div>
       ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* Cabecera */}
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
                 <h2 style={{ margin: 0 }}>{client.name}</h2>
-                <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0' }}>ID: {client.id}</p>
+                <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0', fontSize: '0.875rem' }}>ID: {client.id}</p>
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button onClick={() => setEditing(true)} title="Editar" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem', fontSize: '1.5rem' }}>
-                  ✏️
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                {client.is_active === 0 && (
+                  <span style={{ background: '#fee2e2', color: 'var(--danger)', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600 }}>
+                    Inactivo
+                  </span>
+                )}
+                <button onClick={() => setEditing(true)} className="btn btn-secondary" style={{ fontSize: '0.875rem' }}>
+                  Editar
                 </button>
-                <button onClick={() => setConfirmDelete(true)} title="Eliminar" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem', fontSize: '1.5rem' }}>
-                  🗑️
+                <button onClick={handleToggleActive} className="btn btn-secondary" style={{ fontSize: '0.875rem' }}>
+                  {client.is_active === 0 ? 'Activar' : 'Desactivar'}
                 </button>
-                <button onClick={handleToggleActive} title={client.is_active === 0 ? 'Activar' : 'Desactivar'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem', fontSize: '1.5rem' }}>
-                  {client.is_active === 0 ? '✅' : '❌'}
+                <button onClick={() => setConfirmDelete(true)} className="btn btn-danger" style={{ fontSize: '0.875rem' }}>
+                  Eliminar
                 </button>
               </div>
             </div>
           </div>
-        )}
+
+          {/* Información del cliente */}
+          <div className="card">
+            <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+              Información
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
+              <div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 500 }}>Teléfono</p>
+                <p style={{ fontWeight: 500 }}>{client.phone || '—'}</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 500 }}>CUIL</p>
+                <p style={{ fontWeight: 500 }}>{client.cuil || '—'}</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 500 }}>Dirección</p>
+                <p style={{ fontWeight: 500 }}>{client.address || '—'}</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 500 }}>Creado por</p>
+                <p style={{ fontWeight: 500 }}>{client.creator_name ? `${client.creator_name} ${client.creator_lastname || ''}`.trim() : '—'}</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 500 }}>Fecha de alta</p>
+                <p style={{ fontWeight: 500 }}>{new Date(client.created_at).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Estado BCRA */}
+          <div className="card">
+            <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+              Estado BCRA
+            </h3>
+            {client.bcra_status ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                <span style={{
+                  padding: '0.375rem 1rem',
+                  borderRadius: '9999px',
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  background: client.bcra_status === 'Normal' || client.bcra_status === 'Sin deuda'
+                    ? '#dcfce7' : client.bcra_status === 'Seguimiento especial' ? '#fef9c3'
+                    : '#fee2e2',
+                  color: client.bcra_status === 'Normal' || client.bcra_status === 'Sin deuda'
+                    ? 'var(--success)' : client.bcra_status === 'Seguimiento especial' ? '#92400e'
+                    : 'var(--danger)',
+                }}>
+                  {client.bcra_status}
+                </span>
+                {client.bcra_updated_at && (
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                    Actualizado: {new Date(client.bcra_updated_at).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <p style={{ color: 'var(--text-secondary)' }}>Sin consulta registrada</p>
+            )}
+          </div>
+
+          {/* DNI */}
+          {(client.dni_front || client.dni_back) && (
+            <div className="card">
+              <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                DNI
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <p style={{ fontWeight: 500, marginBottom: '0.5rem', fontSize: '0.875rem' }}>Frente</p>
+                  {client.dni_front ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={client.dni_front} alt="DNI frente" style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
+                  ) : (
+                    <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--background)', borderRadius: 'var(--radius)', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Sin imagen</div>
+                  )}
+                </div>
+                <div>
+                  <p style={{ fontWeight: 500, marginBottom: '0.5rem', fontSize: '0.875rem' }}>Dorso</p>
+                  {client.dni_back ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={client.dni_back} alt="DNI dorso" style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
+                  ) : (
+                    <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--background)', borderRadius: 'var(--radius)', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Sin imagen</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {confirmDelete && (
         <div style={{
@@ -300,12 +398,9 @@ export default function ClientDetailPage() {
           background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 1000, padding: '1rem'
         }}>
-          <div style={{
-            background: 'white', borderRadius: '0.5rem', padding: '1.5rem',
-            maxWidth: '400px', width: '100%', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-          }}>
-            <h3 style={{ margin: '0 0 1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
-            <p style={{ margin: '0 0 1.5rem', color: '#666' }}>
+          <div className="card" style={{ maxWidth: '400px', width: '100%' }}>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
+            <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
               ¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.
             </p>
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
