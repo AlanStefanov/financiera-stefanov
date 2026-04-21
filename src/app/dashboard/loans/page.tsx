@@ -63,7 +63,7 @@ export default function LoansPage() {
   const [loanPayments, setLoanPayments] = useState<LoanPayment[]>([]);
   const [user, setUser] = useState<User>({ role: 'operator' });
   const today = new Date().toISOString().split('T')[0];
-  const [formData, setFormData] = useState({ client_id: '', loan_type_id: '', principal_amount: '', start_date: today });
+  const [formData, setFormData] = useState({ client_id: '', loan_type_id: '', principal_amount: '' });
   const [partialPayment, setPartialPayment] = useState<{ payment: LoanPayment; amount: string } | null>(null);
   const [expandedLoanId, setExpandedLoanId] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -85,19 +85,19 @@ export default function LoansPage() {
     return normalized || 'daily';
   };
 
-  const getFirstPaymentMessage = (modality: string, loanTypeName?: string) => {
+  const getFirstPaymentMessage = (modality: string, startDate: string, loanTypeName?: string) => {
     const normalized = normalizeModality(modality, loanTypeName);
-    const now = new Date();
-    const nextDaily = new Date(now);
-    nextDaily.setDate(now.getDate() + 1);
-    const nextWeekly = new Date(now);
-    nextWeekly.setDate(now.getDate() + 7);
-    const nextMonthly = new Date(now);
-    nextMonthly.setDate(now.getDate() + 28);
+    const base = new Date(startDate + 'T12:00:00');
+    const nextDaily = new Date(base);
+    nextDaily.setDate(base.getDate() + 1);
+    const nextWeekly = new Date(base);
+    nextWeekly.setDate(base.getDate() + 7);
+    const nextMonthly = new Date(base);
+    nextMonthly.setDate(base.getDate() + 28);
 
     if (normalized === 'daily') {
       const tomorrowStr = nextDaily.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
-      return 'Su primera cuota será mañana (' + tomorrowStr + ')';
+      return 'Su primera cuota será el ' + tomorrowStr;
     } else if (normalized === 'weekly') {
       const nextWeekStr = nextWeekly.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
       return 'Su primera cuota será el ' + nextWeekStr;
@@ -171,12 +171,11 @@ export default function LoansPage() {
           client_id: parseInt(formData.client_id),
           loan_type_id: parseInt(formData.loan_type_id),
           principal_amount: parseFloat(formData.principal_amount),
-          start_date: formData.start_date,
         }),
       });
 
       if (res.ok) {
-        setFormData({ client_id: '', loan_type_id: '', principal_amount: '', start_date: '' });
+        setFormData({ client_id: '', loan_type_id: '', principal_amount: '' });
         setShowForm(false);
         fetchData();
         showSnackbar('Préstamo creado exitosamente');
@@ -472,16 +471,6 @@ export default function LoansPage() {
                       );
                     })()
                   )}
-                  <div className="form-group">
-                    <label className="form-label">Fecha de Inicio</label>
-                    <input
-                      type="date"
-                      className="input"
-                      value={formData.start_date}
-                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                      required
-                    />
-                  </div>
                   <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                     <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitting}>
                       {submitting ? 'Generando...' : 'Crear Préstamo'}
@@ -664,7 +653,7 @@ export default function LoansPage() {
             <p><strong>Tipo:</strong> {selectedLoan.loan_type_name}</p>
             {selectedLoan.status === 'orden' && (
               <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#fef3c7', borderRadius: 'var(--radius)', color: '#92400e' }}>
-                {getFirstPaymentMessage(selectedLoan.modality, selectedLoan.loan_type_name)}
+                {getFirstPaymentMessage(selectedLoan.modality, selectedLoan.start_date, selectedLoan.loan_type_name)}
               </div>
             )}
           </div>

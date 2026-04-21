@@ -126,11 +126,23 @@ export async function PUT(
         return NextResponse.json({ message: 'No autorizado para cambiar a orden' }, { status: 403 });
       }
 
-      const currentLoan = await get('SELECT * FROM loans WHERE id = ?', [parseInt(id)]);
+      const currentLoan = await get('SELECT l.*, lt.duration_months FROM loans l JOIN loan_types lt ON l.loan_type_id = lt.id WHERE l.id = ?', [parseInt(id)]);
       
       const nowIso = new Date().toISOString();
-      const approvedAt = status === 'aprobado' && currentLoan?.status !== 'aprobado' ? nowIso : (loan.approved_at as string | null);
-      await run('UPDATE loans SET status = ?, updated_at = ?, approved_at = ? WHERE id = ?', [status, nowIso, approvedAt, parseInt(id)]);
+      const isNewApproval = status === 'aprobado' && currentLoan?.status !== 'aprobado';
+      const approvedAt = isNewApproval ? nowIso : (loan.approved_at as string | null);
+
+      if (isNewApproval) {
+        const approvalDate = new Date();
+        const endDate = new Date(approvalDate);
+        endDate.setMonth(endDate.getMonth() + Number(currentLoan?.duration_months || 1));
+        await run(
+          'UPDATE loans SET status = ?, updated_at = ?, approved_at = ?, start_date = ?, end_date = ? WHERE id = ?',
+          [status, nowIso, approvedAt, approvalDate.toISOString(), endDate.toISOString(), parseInt(id)]
+        );
+      } else {
+        await run('UPDATE loans SET status = ?, updated_at = ?, approved_at = ? WHERE id = ?', [status, nowIso, approvedAt, parseInt(id)]);
+      }
 
       const existingPayments = await all('SELECT COUNT(*) as count FROM loan_payments WHERE loan_id = ?', [parseInt(id)]);
       
