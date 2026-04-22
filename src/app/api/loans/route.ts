@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     const decoded = jwt.verify(token, getJwtSecret()) as { id: number };
 
     const body = await request.json();
-    const { client_id, loan_type_id, principal_amount, regenerate_payments } = body;
+    const { client_id, loan_type_id, principal_amount, regenerate_payments, start_date } = body;
 
     console.log('Creating loan:', { client_id, loan_type_id, principal_amount, start_date });
 
