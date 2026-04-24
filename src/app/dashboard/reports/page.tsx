@@ -174,43 +174,36 @@ export default function ReportsPage() {
 
       {activeTab === 'operators' && (
         <div className="card">
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Ganancias por Operador</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <h2>Ganancias por Operador</h2>
+          <table className="table">
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                <th style={{ textAlign: 'left', padding: '0.75rem' }}>Operador</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem' }}>Préstamos</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem' }}>Capital</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem' }}>Interés Total</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem' }}>Ganancia Potencial</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem' }}>Ganancia Real</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem' }}>Acciones</th>
+              <tr>
+                <th>Operador</th>
+                <th>Préstamos</th>
+                <th>Capital</th>
+                <th>Interés Total</th>
+                <th>Ganancia Potencial</th>
+                <th>Ganancia Real</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {(operatorEarnings as any[]).map((op) => (
-                <tr key={op.operator_id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '0.75rem' }}>{op.operator_name} {op.operator_lastname}</td>
-                  <td style={{ textAlign: 'right', padding: '0.75rem' }}>{op.total_loans || 0}</td>
-                  <td style={{ textAlign: 'right', padding: '0.75rem' }}>{formatCurrency(op.total_principal)}</td>
-                  <td style={{ textAlign: 'right', padding: '0.75rem' }}>{formatCurrency(op.total_interest)}</td>
-                  <td style={{ textAlign: 'right', padding: '0.75rem', color: 'var(--success)' }}>{formatCurrency(op.potential_earnings)}</td>
-                  <td style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 'bold', color: 'var(--primary)' }}>{formatCurrency(op.actual_earnings)}</td>
-                  <td style={{ textAlign: 'center', padding: '0.75rem' }}>
+                <tr key={op.operator_id}>
+                  <td>{op.operator_name} {op.operator_lastname}</td>
+                  <td>{op.total_loans || 0}</td>
+                  <td>{formatCurrency(op.total_principal)}</td>
+                  <td>{formatCurrency(op.total_interest)}</td>
+                  <td>{formatCurrency(op.potential_earnings)}</td>
+                  <td><span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{formatCurrency(op.actual_earnings)}</span></td>
+                  <td>
                     {op.operator_email ? (
                       <button
                         onClick={() => setSendEmailModal({ show: true, operatorId: op.operator_id, operatorName: `${op.operator_name} ${op.operator_lastname}`, operatorEmail: op.operator_email })}
-                        style={{
-                          background: 'var(--primary)',
-                          color: 'white',
-                          border: 'none',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '0.75rem'
-                        }}
+                        className="btn btn-primary"
+                        style={{ padding: '0.5rem 0.75rem', fontSize: '0.75rem' }}
                       >
-                        ✉️ Enviar Email
+                        ✉️
                       </button>
                     ) : (
                       <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Sin email</span>
@@ -225,34 +218,28 @@ export default function ReportsPage() {
 
       {activeTab === 'collections' && (
         <div className="card">
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Historial de Cobros</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <h2>Historial de Cobros</h2>
+          <table className="table">
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                <th style={{ textAlign: 'left', padding: '0.75rem' }}>Cliente</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem' }}>Operador</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem' }}>Monto</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem' }}>Pagado</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem' }}>Vencimiento</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem' }}>Estado</th>
+              <tr>
+                <th>Cliente</th>
+                <th>Operador</th>
+                <th>Monto</th>
+                <th>Pagado</th>
+                <th>Vencimiento</th>
+                <th>Estado</th>
               </tr>
             </thead>
             <tbody>
               {(collections as any[]).slice(0, 50).map((c) => (
-                <tr key={c.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '0.75rem' }}>{c.client_name}</td>
-                  <td style={{ padding: '0.75rem' }}>{c.operator_name}</td>
-                  <td style={{ textAlign: 'right', padding: '0.75rem' }}>{formatCurrency(c.amount)}</td>
-                  <td style={{ textAlign: 'right', padding: '0.75rem' }}>{formatCurrency(c.paid_amount)}</td>
-                  <td style={{ padding: '0.75rem' }}>{new Date(c.due_date).toLocaleDateString('es-AR')}</td>
-                  <td style={{ padding: '0.75rem' }}>
-                    <span style={{
-                      padding: '0.2rem 0.5rem',
-                      borderRadius: '3px',
-                      fontSize: '0.75rem',
-                      background: c.is_paid ? '#dcfce7' : '#fee2e2',
-                      color: c.is_paid ? '#16a34a' : '#dc2626',
-                    }}>
+                <tr key={c.id}>
+                  <td>{c.client_name}</td>
+                  <td>{c.operator_name}</td>
+                  <td>{formatCurrency(c.amount)}</td>
+                  <td>{formatCurrency(c.paid_amount)}</td>
+                  <td>{new Date(c.due_date).toLocaleDateString('es-AR')}</td>
+                  <td>
+                    <span className={`badge ${c.is_paid ? 'badge-success' : 'badge-warning'}`}>
                       {c.is_paid ? 'Pagado' : 'Pendiente'}
                     </span>
                   </td>
@@ -265,28 +252,28 @@ export default function ReportsPage() {
 
       {activeTab === 'overdue' && (
         <div className="card">
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--danger)' }}>Pagos Atrasados</h2>
+          <h2 style={{ color: 'var(--danger)' }}>Pagos Atrasados</h2>
           {(overduePayments as any[]).length === 0 ? (
             <p>No hay pagos atrasados</p>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table className="table">
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ textAlign: 'left', padding: '0.75rem' }}>Cliente</th>
-                  <th style={{ textAlign: 'left', padding: '0.75rem' }}>Teléfono</th>
-                  <th style={{ textAlign: 'left', padding: '0.75rem' }}>Operador</th>
-                  <th style={{ textAlign: 'right', padding: '0.75rem' }}>Monto</th>
-                  <th style={{ textAlign: 'left', padding: '0.75rem' }}>Vencido</th>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Teléfono</th>
+                  <th>Operador</th>
+                  <th>Monto</th>
+                  <th>Vencido</th>
                 </tr>
               </thead>
               <tbody>
                 {(overduePayments as any[]).map((p) => (
-                  <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '0.75rem' }}>{p.client_name}</td>
-                    <td style={{ padding: '0.75rem' }}>{p.client_phone}</td>
-                    <td style={{ padding: '0.75rem' }}>{p.operator_name}</td>
-                    <td style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 'bold', color: 'var(--danger)' }}>{formatCurrency(p.amount)}</td>
-                    <td style={{ padding: '0.75rem', color: 'var(--danger)' }}>{new Date(p.due_date).toLocaleDateString('es-AR')}</td>
+                  <tr>
+                    <td>{p.client_name}</td>
+                    <td>{p.client_phone}</td>
+                    <td>{p.operator_name}</td>
+                    <td><span style={{ fontWeight: 'bold', color: 'var(--danger)' }}>{formatCurrency(p.amount)}</span></td>
+                    <td><span style={{ color: 'var(--danger)' }}>{new Date(p.due_date).toLocaleDateString('es-AR')}</span></td>
                   </tr>
                 ))}
               </tbody>
