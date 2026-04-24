@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 
 const API_BASE = process.env.TEST_API_URL || 'http://localhost:3000/api';
 
@@ -12,7 +12,7 @@ interface LoginResponse {
 }
 
 describe('Auth API', () => {
-  let authToken: string;
+  let _authToken: string;
 
   describe('POST /auth/login', () => {
     it('should login with valid credentials', async () => {
@@ -29,7 +29,7 @@ describe('Auth API', () => {
       const data: LoginResponse = await response.json();
       expect(data.token).toBeDefined();
       expect(data.user?.role).toBe('admin');
-      authToken = data.token!;
+      _authToken = data.token!;
     });
 
     it('should reject invalid password', async () => {

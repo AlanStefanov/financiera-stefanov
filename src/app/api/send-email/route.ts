@@ -3,12 +3,11 @@ import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import path from 'path';
-import dns from 'dns';
 import { getJwtSecret } from '@/lib/auth';
 
-const smtpPort = parseInt(process.env.SMTP_PORT || '587');
-
 export async function POST(request: NextRequest) {
+  let transporter: nodemailer.Transporter<SMTPTransport.SentMessageInfo> | null = null;
+
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     if (!token) {
@@ -26,18 +25,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Faltan campos requeridos' }, { status: 400 });
     }
 
-    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.error('Missing SMTP configuration');
+    const smtpHost = (process.env.SMTP_HOST || process.env.EMAIL_HOST || '').trim();
+    const smtpUser = (process.env.SMTP_USER || process.env.EMAIL_USER || '').trim();
+    const smtpPass = (process.env.SMTP_PASS || process.env.EMAIL_PASS || '').trim();
+    const smtpPort = parseInt(process.env.SMTP_PORT || (smtpHost.includes('gmail.com') ? '465' : '587'));
+
+    if (!smtpHost || !smtpUser || !smtpPass) {
+      console.error('Missing SMTP configuration', { smtpHost, smtpUser: Boolean(smtpUser), smtpPass: Boolean(smtpPass) });
       return NextResponse.json({ message: 'Error al enviar email: configuración SMTP incompleta' }, { status: 500 });
     }
 
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: smtpPort,
-      secure: smtpPort === 465,
+    const isGmail = smtpHost.includes('gmail.com');
+    const transportOptions: SMTPTransport.Options = {
+      host: smtpHost,
+      port: isGmail ? 465 : smtpPort,
+      secure: isGmail ? true : smtpPort === 465,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: smtpUser,
+        pass: smtpPass,
       },
       tls: {
         rejectUnauthorized: false,
@@ -45,17 +50,12 @@ export async function POST(request: NextRequest) {
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 10000,
-      lookup: (
-        hostname: string,
-        options: any,
-        callback: (err: NodeJS.ErrnoException | null, address: string, family: number) => void,
-      ) => {
-        dns.lookup(hostname, { family: 4, all: false }, callback);
-      },
-    } as SMTPTransport.Options);
+    };
+
+    transporter = nodemailer.createTransport(transportOptions);
 
     const mailOptions: any = {
-      from: process.env.SMTP_USER,
+      from: smtpUser,
       to,
       subject,
       html: body,
@@ -77,5 +77,9 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error sending email:', error);
     return NextResponse.json({ message: 'Error al enviar email: ' + (error.message || 'Error desconocido') }, { status: 500 });
+  } finally {
+    if (transporter && typeof transporter.close === 'function') {
+      transporter.close();
+    }
   }
 }

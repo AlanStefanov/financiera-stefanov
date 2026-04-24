@@ -1,0 +1,163 @@
+yarn run v1.22.22
+$ eslint
+
+/home/stefanov/repos/financiera-stefanov/__tests__/api.test.ts
+   1:43  warning  'afterAll' is defined but never used            @typescript-eslint/no-unused-vars
+  15:7   warning  'authToken' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/stefanov/repos/financiera-stefanov/scripts/bcra-validate.ts
+   2:8   warning  'crypto' is defined but never used        @typescript-eslint/no-unused-vars
+  25:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  45:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/auth/login/route.ts
+  34:23  warning  '_' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/bcra-check/route.ts
+    3:90  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   21:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   75:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   89:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   94:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  104:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/bcra-validate-cron/route.ts
+  13:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  49:12  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  80:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/clients/[id]/route.ts
+   18:12  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+   39:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   91:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  120:12  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/clients/route.ts
+    9:7   warning  'saveImage' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   45:19  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   62:24  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   70:14  warning  'parseError' is defined but never used          @typescript-eslint/no-unused-vars
+  112:19  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/earnings/route.ts
+  18:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  71:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/geocode/route.ts
+   3:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  62:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  73:18  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/loan-payments/route.ts
+  21:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/loan-types/[id]/route.ts
+  30:12  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  51:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  76:12  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  96:12  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/loan-types/route.ts
+  19:27  warning  '_request' is defined but never used      @typescript-eslint/no-unused-vars
+  24:12  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  66:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/loans/[id]/route.ts
+   54:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  175:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  198:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/loans/route.ts
+   44:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  182:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/overdue-payments/route.ts
+  48:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/payments/route.ts
+  21:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  64:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/reports/route.ts
+  101:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/send-email/route.ts
+  57:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  77:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/users/[id]/route.ts
+   36:12  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+   57:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  115:12  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  142:12  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+
+/home/stefanov/repos/financiera-stefanov/src/app/api/users/route.ts
+  27:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:14  warning  'parseError' is defined but never used    @typescript-eslint/no-unused-vars
+  75:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/stefanov/repos/financiera-stefanov/src/app/dashboard/clients/[id]/page.tsx
+   64:6   warning  React Hook useEffect has a missing dependency: 'fetchClient'. Either include it or remove the dependency array                                                                                                                                                                           react-hooks/exhaustive-deps
+  120:25  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  247:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  262:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/stefanov/repos/financiera-stefanov/src/app/dashboard/layout.tsx
+  77:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/stefanov/repos/financiera-stefanov/src/app/dashboard/page.tsx
+   85:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   93:79  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  107:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  117:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  121:75  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  373:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/stefanov/repos/financiera-stefanov/src/app/dashboard/reports/page.tsx
+    7:48  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   49:56  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   50:40  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   72:56  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   73:44  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  124:39  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  267:37  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  347:32  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  394:15  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/stefanov/repos/financiera-stefanov/src/app/page.tsx
+  52:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/stefanov/repos/financiera-stefanov/src/lib/auth.ts
+  20:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/stefanov/repos/financiera-stefanov/src/lib/db.ts
+   35:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   40:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   45:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  158:14  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  161:14  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  164:14  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  167:14  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  170:14  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  186:14  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  190:14  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  231:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  267:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  281:12  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  284:12  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  287:12  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  290:12  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+
+/home/stefanov/repos/financiera-stefanov/src/types/sql.js.d.ts
+   3:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   4:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  12:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  22:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 101 problems (0 errors, 101 warnings)
+
+Done in 2.19s.

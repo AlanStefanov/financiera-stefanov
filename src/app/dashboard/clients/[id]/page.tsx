@@ -21,6 +21,17 @@ interface Client {
   created_at: string;
 }
 
+interface Loan {
+  id: number;
+  status: string;
+  principal_amount: number;
+  total_amount: number;
+  loan_type_name: string;
+  start_date: string;
+  payment_count: number;
+  paid_count: number;
+}
+
 export default function ClientDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -28,12 +39,28 @@ export default function ClientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', address: '', cuil: '', dni_front: '', dni_back: '' });
-  const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [consultingBcra, setConsultingBcra] = useState(false);
+
+  const [loans, setLoans] = useState<Loan[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
   const { showSnackbar } = useSnackbar();
+
+  const fetchLoans = async (clientId: string | string[] | undefined) => {
+    if (!clientId) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/loans?client_id=${clientId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLoans(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Error fetching loans:', error);
+    }
+  };
 
   const fetchClient = async () => {
     try {
@@ -62,6 +89,8 @@ export default function ClientDetailPage() {
 
   useEffect(() => {
     fetchClient();
+    fetchLoans(params.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
   const compressImage = (base64Data: string, maxSizeKB: number = 512): Promise<string> => {
@@ -144,46 +173,6 @@ export default function ClientDetailPage() {
     }
   };
 
-  const handleConsultBcra = async () => {
-    if (!client?.cuil) {
-      alert('El cliente no tiene CUIL registrado');
-      return;
-    }
-
-    setConsultingBcra(true);
-
-    try {
-      const res = await fetch('/api/bcra-check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cuil: client.cuil })
-      });
-      
-      const data = await res.json();
-      setConsultingBcra(false);
-      
-      if (res.ok && data.status) {
-        await fetch(`/api/clients/${params.id}`, {
-          method: 'PUT',
-          headers: { 
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({ bcra_status: data.status })
-        });
-        fetchClient();
-        alert(`Estado BCRA: ${data.status}\nTotal deuda: $${data.totalDeuda?.toFixed(2) || 0}\nEntidades: ${data.entidades?.length || 0}`);
-      } else {
-        const errMsg = data.message || data.error || 'Error al consultar BCRA';
-        alert(errMsg + (data.trying ? ' (El servicio está temporalmente no disponible, intente más tarde)' : ''));
-      }
-    } catch (error) {
-      setConsultingBcra(false);
-      console.error('BCRA check error:', error);
-      alert('Error al consultar BCRA');
-    }
-  };
-
   const handleDelete = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -229,18 +218,6 @@ export default function ClientDetailPage() {
       <button onClick={() => router.push('/dashboard/clients')} className="btn btn-secondary" style={{ marginBottom: '1rem' }}>
         ← Volver
       </button>
-
-      {formMessage && (
-        <div style={{ 
-          padding: '0.75rem 1rem', 
-          marginBottom: '1rem', 
-          borderRadius: 'var(--radius)',
-          background: formMessage.type === 'success' ? 'var(--success)' : 'var(--danger)',
-          color: 'white'
-        }}>
-          {formMessage.text}
-        </div>
-      )}
 
       {editing ? (
         <div className="card">
@@ -297,6 +274,7 @@ export default function ClientDetailPage() {
                 />
                 {(client.dni_front || form.dni_front) && (
                   <div style={{ marginTop: '0.5rem' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={form.dni_front || client.dni_front} alt="DNI frente" style={{ width: '200px', maxWidth: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
                   </div>
                 )}
@@ -312,6 +290,7 @@ export default function ClientDetailPage() {
                 />
                 {(client.dni_back || form.dni_back) && (
                   <div style={{ marginTop: '0.5rem' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={form.dni_back || client.dni_back} alt="DNI dorso" style={{ width: '200px', maxWidth: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
                   </div>
                 )}
@@ -323,26 +302,221 @@ export default function ClientDetailPage() {
           </form>
         </div>
       ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* Cabecera */}
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
                 <h2 style={{ margin: 0 }}>{client.name}</h2>
-                <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0' }}>ID: {client.id}</p>
+                <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0', fontSize: '0.875rem' }}>ID: {client.id}</p>
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button onClick={() => setEditing(true)} title="Editar" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem', fontSize: '1.5rem' }}>
-                  ✏️
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                {client.is_active === 0 && (
+                  <span style={{ background: '#fee2e2', color: 'var(--danger)', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600 }}>
+                    Inactivo
+                  </span>
+                )}
+                <button onClick={() => setEditing(true)} className="btn btn-secondary" style={{ fontSize: '0.875rem' }}>
+                  Editar
                 </button>
-                <button onClick={() => setConfirmDelete(true)} title="Eliminar" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem', fontSize: '1.5rem' }}>
-                  🗑️
+                <button onClick={handleToggleActive} className="btn btn-secondary" style={{ fontSize: '0.875rem' }}>
+                  {client.is_active === 0 ? 'Activar' : 'Desactivar'}
                 </button>
-                <button onClick={handleToggleActive} title={client.is_active === 0 ? 'Activar' : 'Desactivar'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem', fontSize: '1.5rem' }}>
-                  {client.is_active === 0 ? '✅' : '❌'}
+                <button onClick={() => setConfirmDelete(true)} className="btn btn-danger" style={{ fontSize: '0.875rem' }}>
+                  Eliminar
                 </button>
               </div>
             </div>
           </div>
-        )}
+
+          {/* Información del cliente */}
+          <div className="card">
+            <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+              Información
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
+              <div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 500 }}>Teléfono</p>
+                <p style={{ fontWeight: 500 }}>{client.phone || '—'}</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 500 }}>CUIL</p>
+                <p style={{ fontWeight: 500 }}>{client.cuil || '—'}</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 500 }}>Dirección</p>
+                <p style={{ fontWeight: 500 }}>{client.address || '—'}</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 500 }}>Creado por</p>
+                <p style={{ fontWeight: 500 }}>{client.creator_name ? `${client.creator_name} ${client.creator_lastname || ''}`.trim() : '—'}</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 500 }}>Fecha de alta</p>
+                <p style={{ fontWeight: 500 }}>{new Date(client.created_at).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Estado BCRA */}
+          <div className="card">
+            <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+              Estado BCRA
+            </h3>
+            {client.bcra_status ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                <span style={{
+                  padding: '0.375rem 1rem',
+                  borderRadius: '9999px',
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  background: client.bcra_status === 'Normal' || client.bcra_status === 'Sin deuda'
+                    ? '#dcfce7' : client.bcra_status === 'Seguimiento especial' ? '#fef9c3'
+                    : '#fee2e2',
+                  color: client.bcra_status === 'Normal' || client.bcra_status === 'Sin deuda'
+                    ? 'var(--success)' : client.bcra_status === 'Seguimiento especial' ? '#92400e'
+                    : 'var(--danger)',
+                }}>
+                  {client.bcra_status}
+                </span>
+                {client.bcra_updated_at && (
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                    Actualizado: {new Date(client.bcra_updated_at).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <p style={{ color: 'var(--text-secondary)' }}>Sin consulta registrada</p>
+            )}
+          </div>
+
+          {/* Préstamos */}
+          <div className="card">
+            <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+              Préstamos
+            </h3>
+            {loans.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)' }}>No dispone de préstamos.</p>
+            ) : (() => {
+              const activos = loans.filter(l => l.status === 'orden' || l.status === 'aprobado');
+              const finalizados = loans.filter(l => l.status === 'finalizado');
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {activos.length > 0 && (
+                    <div>
+                      <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Activos
+                      </p>
+                      <div style={{ display: 'grid', gap: '0.5rem' }}>
+                        {activos.map(loan => {
+                          const pendingPayments = (loan.payment_count ?? 0) - (loan.paid_count ?? 0);
+                          return (
+                            <button
+                              key={loan.id}
+                              onClick={() => router.push(`/dashboard/loans?loan_id=${loan.id}`)}
+                              style={{
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                padding: '0.75rem 1rem', border: '1px solid var(--border)',
+                                borderRadius: 'var(--radius)', background: 'var(--surface)',
+                                cursor: 'pointer', textAlign: 'left', width: '100%',
+                                transition: 'background 0.15s',
+                              }}
+                              onMouseEnter={e => (e.currentTarget.style.background = 'var(--background)')}
+                              onMouseLeave={e => (e.currentTarget.style.background = 'var(--surface)')}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <span style={{
+                                  background: loan.status === 'aprobado' ? '#dbeafe' : '#fef9c3',
+                                  color: loan.status === 'aprobado' ? 'var(--primary)' : '#92400e',
+                                  padding: '0.2rem 0.6rem', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 700,
+                                }}>
+                                  {loan.status === 'aprobado' ? 'Aprobado' : 'Orden'}
+                                </span>
+                                <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Préstamo #{loan.id}</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{loan.loan_type_name} — ${loan.principal_amount?.toFixed(2)}</span>
+                              </div>
+                              <span style={{ fontSize: '0.875rem', color: pendingPayments > 0 ? 'var(--danger)' : 'var(--success)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                {pendingPayments > 0 ? `Adeuda ${pendingPayments} cuota${pendingPayments !== 1 ? 's' : ''}` : 'Al día'}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {finalizados.length > 0 && (
+                    <div>
+                      <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Finalizados
+                      </p>
+                      <div style={{ display: 'grid', gap: '0.5rem' }}>
+                        {finalizados.map(loan => (
+                          <button
+                            key={loan.id}
+                            onClick={() => router.push(`/dashboard/loans?loan_id=${loan.id}`)}
+                            style={{
+                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                              padding: '0.75rem 1rem', border: '1px solid var(--border)',
+                              borderRadius: 'var(--radius)', background: 'var(--surface)',
+                              cursor: 'pointer', textAlign: 'left', width: '100%',
+                              opacity: 0.7, transition: 'opacity 0.15s',
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                            onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <span style={{
+                                background: '#f1f5f9', color: 'var(--text-secondary)',
+                                padding: '0.2rem 0.6rem', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 700,
+                              }}>
+                                Finalizado
+                              </span>
+                              <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Préstamo #{loan.id}</span>
+                              <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{loan.loan_type_name} — ${loan.principal_amount?.toFixed(2)}</span>
+                            </div>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                              {new Date(loan.start_date).toLocaleDateString('es-AR')}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* DNI */}
+          {(client.dni_front || client.dni_back) && (
+            <div className="card">
+              <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                DNI
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <p style={{ fontWeight: 500, marginBottom: '0.5rem', fontSize: '0.875rem' }}>Frente</p>
+                  {client.dni_front ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={client.dni_front} alt="DNI frente" style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
+                  ) : (
+                    <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--background)', borderRadius: 'var(--radius)', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Sin imagen</div>
+                  )}
+                </div>
+                <div>
+                  <p style={{ fontWeight: 500, marginBottom: '0.5rem', fontSize: '0.875rem' }}>Dorso</p>
+                  {client.dni_back ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={client.dni_back} alt="DNI dorso" style={{ width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
+                  ) : (
+                    <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--background)', borderRadius: 'var(--radius)', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Sin imagen</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {confirmDelete && (
         <div style={{
@@ -350,12 +524,9 @@ export default function ClientDetailPage() {
           background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 1000, padding: '1rem'
         }}>
-          <div style={{
-            background: 'white', borderRadius: '0.5rem', padding: '1.5rem',
-            maxWidth: '400px', width: '100%', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-          }}>
-            <h3 style={{ margin: '0 0 1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
-            <p style={{ margin: '0 0 1.5rem', color: '#666' }}>
+          <div className="card" style={{ maxWidth: '400px', width: '100%' }}>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
+            <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
               ¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.
             </p>
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>

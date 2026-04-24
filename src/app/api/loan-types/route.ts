@@ -16,7 +16,7 @@ const verifyAdmin = (token: string) => {
   }
 };
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     await getDB();
     const loanTypes = await all('SELECT * FROM loan_types ORDER BY duration_months, modality');

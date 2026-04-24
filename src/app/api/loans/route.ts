@@ -21,7 +21,9 @@ export async function GET(request: NextRequest) {
     }
 
     const decoded = jwt.verify(token, getJwtSecret()) as { id: number; role: string };
-    
+    const { searchParams } = new URL(request.url);
+    const clientIdParam = searchParams.get('client_id');
+
     let query = `
       SELECT l.*, c.name as client_name, c.phone as client_phone, u.name || ' ' || u.lastname as operator_name,
              lt.name as loan_type_name, lt.modality, lt.duration_months, lt.interest_percentage,
@@ -32,13 +34,19 @@ export async function GET(request: NextRequest) {
       JOIN users u ON l.operator_id = u.id
       JOIN loan_types lt ON l.loan_type_id = lt.id
     `;
-    
+
+    const conditions: string[] = [];
     if (decoded.role !== 'admin') {
-      query += ` WHERE l.operator_id = ${decoded.id}`;
+      conditions.push(`l.operator_id = ${decoded.id}`);
     }
-    
+    if (clientIdParam) {
+      conditions.push(`l.client_id = ${parseInt(clientIdParam)}`);
+    }
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(' AND ')}`;
+    }
     query += ` ORDER BY l.created_at DESC`;
-    
+
     const loans = await all(query);
     return NextResponse.json(loans);
   } catch (error: any) {
@@ -61,7 +69,7 @@ export async function POST(request: NextRequest) {
     const decoded = jwt.verify(token, getJwtSecret()) as { id: number };
 
     const body = await request.json();
-    const { client_id, loan_type_id, principal_amount, start_date, regenerate_payments } = body;
+    const { client_id, loan_type_id, principal_amount, regenerate_payments, start_date } = body;
 
     console.log('Creating loan:', { client_id, loan_type_id, principal_amount, start_date });
 
@@ -80,32 +88,21 @@ export async function POST(request: NextRequest) {
 
       const numPayments = Number(loanType.modality === 'daily' ? 20 : loanType.modality === 'weekly' ? 4 : loanType.duration_months);
       const paymentAmount = Number(existingLoan.total_amount) / numPayments;
+      const intervalDays = loanType.modality === 'weekly' ? 7 : loanType.modality === 'monthly' ? 28 : 1;
 
       let currentDate = new Date(existingLoan.start_date as string);
-      if (loanType.modality === 'weekly') {
-        while (currentDate.getDay() !== 5) {
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
-      } else if (loanType.modality === 'daily') {
-        currentDate = getNextBusinessDay(new Date(existingLoan.start_date as string));
-      } else if (loanType.modality === 'monthly') {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-      }
+      currentDate = loanType.modality === 'daily'
+        ? getNextBusinessDay(currentDate)
+        : new Date(currentDate.setDate(currentDate.getDate() + intervalDays));
 
       for (let i = 0; i < numPayments; i++) {
         await run(
           'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
           [existingLoan.id, i + 1, paymentAmount, currentDate.toISOString()]
         );
-        if (loanType.modality === 'weekly') {
-          while (currentDate.getDay() !== 5) {
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-        } else if (loanType.modality === 'daily') {
-          currentDate = getNextBusinessDay(currentDate);
-        } else {
-          currentDate.setMonth(currentDate.getMonth() + 1);
-        }
+        currentDate = loanType.modality === 'daily'
+          ? getNextBusinessDay(currentDate)
+          : new Date(currentDate.setDate(currentDate.getDate() + intervalDays));
       }
 
       const loan = await get('SELECT * FROM loans WHERE id = ?', [existingLoan.id]);
@@ -115,7 +112,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (!client_id || !loan_type_id || !principal_amount || !start_date) {
+    if (!client_id || !loan_type_id || !principal_amount) {
       return NextResponse.json({ message: 'Faltan campos requeridos' }, { status: 400 });
     }
 
@@ -155,47 +152,11 @@ export async function POST(request: NextRequest) {
     
     console.log('FK check:', { clientExists, operatorExists, loanTypeExists });
 
-    const start = new Date(start_date + 'T12:00:00');
-    const end = new Date(start_date + 'T12:00:00');
-    end.setMonth(end.getMonth() + (loanType.duration_months as number));
-
     const result = await run(
-      `INSERT INTO loans (client_id, operator_id, loan_type_id, principal_amount, total_amount, start_date, end_date, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'orden')`,
-      [client_id, decoded.id, loan_type_id, principal_amount, totalAmount, start.toISOString(), end.toISOString()]
+      `INSERT INTO loans (client_id, operator_id, loan_type_id, principal_amount, total_amount, status)
+       VALUES (?, ?, ?, ?, ?, 'orden')`,
+      [client_id, decoded.id, loan_type_id, principal_amount, totalAmount]
     );
-
-    const numPayments = Number(loanType.modality === 'daily' ? 20 : loanType.modality === 'weekly' ? 4 : loanType.duration_months);
-    const paymentAmount = totalAmount / numPayments;
-
-    let currentDate = new Date(start);
-    if (loanType.modality === 'weekly') {
-      while (currentDate.getDay() !== 5) {
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-    } else if (loanType.modality === 'daily') {
-      while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-    } else if (loanType.modality === 'monthly') {
-      currentDate.setMonth(currentDate.getMonth() + 1);
-    }
-
-    for (let i = 0; i < numPayments; i++) {
-      await run(
-        'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
-        [result.lastID, i + 1, paymentAmount, currentDate.toISOString()]
-      );
-      if (loanType.modality === 'weekly') {
-        while (currentDate.getDay() !== 5) {
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
-      } else if (loanType.modality === 'daily') {
-        currentDate = getNextBusinessDay(currentDate);
-      } else {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-      }
-    }
 
     const loan = await get('SELECT * FROM loans WHERE id = ?', [result.lastID]);
 

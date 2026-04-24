@@ -33,10 +33,11 @@ export default function ClientsPage() {
   const [user, setUser] = useState<User>({ role: 'operator' });
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [form, setForm] = useState({ name: '', phone: '', address: '', dni_front: '', dni_back: '', cuil: '' });
-  const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [consultingBcra, setConsultingBcra] = useState<number | null>(null);
   const [consultingMassive, setConsultingMassive] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: number | null }>({ show: false, id: null });
+  const [confirmMassive, setConfirmMassive] = useState(false);
+  const [bcraModal, setBcraModal] = useState<{ title: string; lines: { label: string; value: string }[]; isError?: boolean } | null>(null);
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
   const { showSnackbar } = useSnackbar();
@@ -250,21 +251,32 @@ export default function ClientsPage() {
           body: JSON.stringify({ bcra_status: data.status })
         });
         fetchClients();
-        alert(`Estado BCRA: ${data.status}\nTotal deuda: $${data.totalDeuda?.toFixed(2) || 0}\nEntidades: ${data.entidades?.length || 0}`);
+        setBcraModal({
+          title: 'Resultado BCRA',
+          lines: [
+            { label: 'Estado', value: data.status },
+            { label: 'Total deuda', value: `$${data.totalDeuda?.toFixed(2) || '0.00'}` },
+            { label: 'Entidades', value: String(data.entidades?.length || 0) },
+          ],
+        });
       } else {
         const errMsg = data.message || data.error || 'Error al consultar BCRA';
-        alert(errMsg + (data.trying ? ' (El servicio está temporalmente no disponible, intente más tarde)' : ''));
+        const detail = errMsg + (data.trying ? ' (El servicio está temporalmente no disponible, intente más tarde)' : '');
+        setBcraModal({ title: 'Error al consultar BCRA', lines: [{ label: 'Detalle', value: detail }], isError: true });
       }
     } catch (error) {
       setConsultingBcra(null);
       console.error('BCRA check error:', error);
-      alert('Error al consultar BCRA');
+      setBcraModal({ title: 'Error', lines: [{ label: 'Detalle', value: 'Error al consultar BCRA' }], isError: true });
     }
   };
 
-  const handleConsultMassive = async () => {
-    if (!confirm('¿Consultar BCRA para todos los clientes con CUIL?')) return;
-    
+  const handleConsultMassive = () => {
+    setConfirmMassive(true);
+  };
+
+  const doConsultMassive = async () => {
+    setConfirmMassive(false);
     setConsultingMassive(true);
     try {
       const token = localStorage.getItem('token');
@@ -274,11 +286,18 @@ export default function ClientsPage() {
       const data = await res.json();
       setConsultingMassive(false);
       fetchClients();
-      alert(`Validación BCRA completada:\n- Coincidencias: ${data.matches}\n- Errores: ${data.mismatches}`);
+      setBcraModal({
+        title: 'Validación BCRA completada',
+        lines: [
+          { label: 'Total procesados', value: String(data.total ?? 0) },
+          { label: 'Actualizados', value: String(data.updated ?? 0) },
+          { label: 'Omitidos', value: String(data.skipped ?? 0) },
+        ],
+      });
     } catch (error) {
       setConsultingMassive(false);
       console.error('Error en consulta masiva:', error);
-      alert('Error al consultar BCRA');
+      setBcraModal({ title: 'Error', lines: [{ label: 'Detalle', value: 'Error al consultar BCRA' }], isError: true });
     }
   };
 
@@ -286,11 +305,10 @@ export default function ClientsPage() {
     setForm({ name: '', phone: '', address: '', dni_front: '', dni_back: '', cuil: '' });
     setEditingClient(null);
     setShowForm(false);
-    setFormMessage(null);
   };
   
 
-  if (loading) return <div>Cargando...</div>;
+  if (loading) return <div className="empty-state">Cargando...</div>;
 
   return (
     <div>
@@ -315,17 +333,7 @@ export default function ClientsPage() {
 
       {showForm && (
         <div className="card" style={{ marginBottom: '1.5rem' }}>
-          {formMessage && (
-            <div style={{ 
-              padding: '0.75rem 1rem', 
-              marginBottom: '1rem', 
-              borderRadius: 'var(--radius)',
-              background: formMessage.type === 'success' ? 'var(--success)' : 'var(--danger)',
-              color: 'white'
-            }}>
-              {formMessage.text}
-            </div>
-          )}
+          <h3 style={{ marginBottom: '1rem' }}>{editingClient ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
           <form onSubmit={handleSubmit}>
             <div className="form-grid">
               <div className="form-group">
@@ -594,20 +602,76 @@ export default function ClientsPage() {
           background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 1000, padding: '1rem'
         }}>
-          <div style={{
-            background: 'white', borderRadius: '0.5rem', padding: '1.5rem',
-            maxWidth: '400px', width: '100%', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-          }}>
-            <h3 style={{ margin: '0 0 1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
-            <p style={{ margin: '0 0 1.5rem', color: '#666' }}>
+          <div className="card" style={{ maxWidth: '400px', width: '100%' }}>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
+            <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
               ¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.
             </p>
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+            <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
               <button onClick={() => setConfirmDelete({ show: false, id: null })} className="btn btn-secondary">
                 Cancelar
               </button>
               <button onClick={handleDelete} className="btn btn-danger">
                 Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmMassive && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, padding: '1rem'
+        }}>
+          <div className="card" style={{ maxWidth: '420px', width: '100%' }}>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Consulta masiva BCRA</h3>
+            <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
+              ¿Consultar BCRA para todos los clientes con CUIL? Esta operación puede demorar varios segundos.
+            </p>
+            <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
+              <button onClick={() => setConfirmMassive(false)} className="btn btn-secondary">
+                Cancelar
+              </button>
+              <button onClick={doConsultMassive} className="btn btn-primary">
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {bcraModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, padding: '1rem'
+        }} onClick={() => setBcraModal(null)}>
+          <div className="card" style={{ maxWidth: '420px', width: '100%' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h3 style={{ fontSize: '1.25rem', color: bcraModal.isError ? 'var(--danger)' : 'var(--color-title)' }}>
+                {bcraModal.title}
+              </h3>
+              <button onClick={() => setBcraModal(null)} className="btn btn-secondary" style={{ padding: '0.5rem' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div style={{ marginBottom: '1.5rem' }}>
+              {bcraModal.lines.map((line, i) => (
+                <div key={i} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '0.625rem 0',
+                  borderBottom: i < bcraModal.lines.length - 1 ? '1px solid var(--border)' : 'none'
+                }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{line.label}</span>
+                  <span style={{ fontWeight: 600 }}>{line.value}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setBcraModal(null)} className="btn btn-primary">
+                Aceptar
               </button>
             </div>
           </div>

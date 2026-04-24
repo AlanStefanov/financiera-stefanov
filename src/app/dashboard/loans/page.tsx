@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useSnackbar } from '@/components/Snackbar';
 
 interface Loan {
@@ -62,29 +63,47 @@ export default function LoansPage() {
   const [loanPayments, setLoanPayments] = useState<LoanPayment[]>([]);
   const [user, setUser] = useState<User>({ role: 'operator' });
   const today = new Date().toISOString().split('T')[0];
-  const [formData, setFormData] = useState({ client_id: '', loan_type_id: '', principal_amount: '', start_date: today });
+  const [formData, setFormData] = useState({ client_id: '', loan_type_id: '', principal_amount: '' });
   const [partialPayment, setPartialPayment] = useState<{ payment: LoanPayment; amount: string } | null>(null);
   const [expandedLoanId, setExpandedLoanId] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: number | null }>({ show: false, id: null });
   const { showSnackbar } = useSnackbar();
+  const searchParams = useSearchParams();
 
-  const getFirstPaymentMessage = (modality: string) => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const friday = new Date();
-    const dayOfWeek = friday.getDay();
-    const daysUntilFriday = (5 - dayOfWeek + 7) % 7 || 7;
-    friday.setDate(friday.getDate() + daysUntilFriday);
+  const normalizeModality = (modality: string | undefined, loanTypeName?: string) => {
+    const normalized = modality?.toString().toLowerCase().trim();
+    if (normalized === 'daily' || normalized === 'diario') return 'daily';
+    if (normalized === 'weekly' || normalized === 'semanal') return 'weekly';
+    if (normalized === 'monthly' || normalized === 'mensual') return 'monthly';
 
-    if (modality === 'daily') {
-      const tomorrowStr = tomorrow.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
-      return 'Su primera cuota sera manana (' + tomorrowStr + ')';
-    } else if (modality === 'weekly') {
-      const fridayStr = friday.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
-      return 'Su primera cuota sera el ' + fridayStr;
+    const name = loanTypeName?.toString().toLowerCase() || '';
+    if (name.includes('diario')) return 'daily';
+    if (name.includes('semanal')) return 'weekly';
+    if (name.includes('mensual')) return 'monthly';
+
+    return normalized || 'daily';
+  };
+
+  const getFirstPaymentMessage = (modality: string, startDate: string, loanTypeName?: string) => {
+    const normalized = normalizeModality(modality, loanTypeName);
+    const base = new Date(startDate + 'T12:00:00');
+    const nextDaily = new Date(base);
+    nextDaily.setDate(base.getDate() + 1);
+    const nextWeekly = new Date(base);
+    nextWeekly.setDate(base.getDate() + 7);
+    const nextMonthly = new Date(base);
+    nextMonthly.setDate(base.getDate() + 28);
+
+    if (normalized === 'daily') {
+      const tomorrowStr = nextDaily.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+      return 'Su primera cuota será el ' + tomorrowStr;
+    } else if (normalized === 'weekly') {
+      const nextWeekStr = nextWeekly.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+      return 'Su primera cuota será el ' + nextWeekStr;
     } else {
-      return 'Su primera cuota sera dentro de los proximos 28 dias';
+      const nextMonthStr = nextMonthly.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+      return 'Su primera cuota será dentro de 28 días (' + nextMonthStr + ')';
     }
   };
 
@@ -127,6 +146,14 @@ export default function LoansPage() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    const loanId = searchParams.get('loan_id');
+    if (!loanId || loans.length === 0) return;
+    const loan = loans.find(l => l.id === parseInt(loanId));
+    if (loan) handleViewPayments(loan);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loans, searchParams]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting) return;
@@ -144,12 +171,11 @@ export default function LoansPage() {
           client_id: parseInt(formData.client_id),
           loan_type_id: parseInt(formData.loan_type_id),
           principal_amount: parseFloat(formData.principal_amount),
-          start_date: formData.start_date,
         }),
       });
 
       if (res.ok) {
-        setFormData({ client_id: '', loan_type_id: '', principal_amount: '', start_date: '' });
+        setFormData({ client_id: '', loan_type_id: '', principal_amount: '' });
         setShowForm(false);
         fetchData();
         showSnackbar('Préstamo creado exitosamente');
@@ -269,14 +295,12 @@ export default function LoansPage() {
       }
       
       if (newStatus === 'aprobado' && loan) {
-        const storedUser = localStorage.getItem('user');
-        const currentUser = storedUser ? JSON.parse(storedUser) : { name: 'el operador', lastname: '', username: '' };
-        const operatorDisplay = currentUser.username ? `${currentUser.name || ''} ${currentUser.lastname || ''} (@${currentUser.username})` : `${currentUser.name || ''} ${currentUser.lastname || ''}`.trim() || 'el operador';
-        
+        const operatorDisplay = loan.operator_name || 'el operador de créditos';
         const phone = loan.client_phone.replace(/\D/g, '');
-        const installments = loan.modality === 'daily' ? 20 : loan.modality === 'weekly' ? 4 : Number(loan.duration_months);
+        const loanModality = normalizeModality(loan.modality, loan.loan_type_name);
+        const installments = loanModality === 'daily' ? 20 : loanModality === 'weekly' ? 4 : Number(loan.duration_months);
         const installmentAmount = Math.round(loan.total_amount / installments);
-        const modalityText = loan.modality === 'daily' ? 'Pago Diario' : loan.modality === 'weekly' ? 'Pago Semanal' : 'Pago Mensual';
+        const modalityText = loanModality === 'daily' ? 'Pago Diario' : loanModality === 'weekly' ? 'Pago Semanal' : 'Pago Mensual';
         const endDate = loan.end_date ? new Date(loan.end_date).toLocaleDateString('es-AR') : 'N/A';
         const message = `¡Hola ${loan.client_name}! Tu préstamo ha sido aprobado.\n\nMonto: $${loan.principal_amount.toLocaleString()}\nTotal: $${loan.total_amount.toLocaleString()}\nTipo: ${modalityText}\nCuotas: ${installments} de $${installmentAmount.toLocaleString()}\nFecha de fin: ${endDate}\n\nTu operador de créditos es: ${operatorDisplay}. Comuníquese con él para gestionar los pagos.\n\nGracias por confiar en Microcréditos Stefanov.`;
         window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
@@ -334,21 +358,12 @@ export default function LoansPage() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'orden': return { bg: '#fef3c7', color: '#d97706' };
-      case 'aprobado': return { bg: '#dbeafe', color: '#2563eb' };
-      case 'finalizado': return { bg: '#dcfce7', color: '#16a34a' };
-      default: return { bg: '#f1f5f9', color: '#64748b' };
-    }
-  };
-
-  if (loading) return <div>Cargando...</div>;
+  if (loading) return <div className="empty-state">Cargando...</div>;
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h1>Préstamos</h1>
+        <h1 className="page-title">Préstamos</h1>
         <button onClick={() => setShowForm(!showForm)} className="btn btn-primary">
           {showForm ? 'Cancelar' : 'Nuevo Préstamo'}
         </button>
@@ -377,8 +392,8 @@ export default function LoansPage() {
             ) : (
               <form onSubmit={handleSubmit}>
                 <div style={{ display: 'grid', gap: '1rem' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Cliente</label>
+                  <div className="form-group">
+                    <label className="form-label">Cliente</label>
                     <select
                       className="input"
                       value={formData.client_id}
@@ -391,8 +406,8 @@ export default function LoansPage() {
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Tipo de Préstamo</label>
+                  <div className="form-group">
+                    <label className="form-label">Tipo de Préstamo</label>
                     <select
                       className="input"
                       value={formData.loan_type_id}
@@ -407,8 +422,8 @@ export default function LoansPage() {
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monto Principal</label>
+                  <div className="form-group">
+                    <label className="form-label">Monto Principal</label>
                     <input
                       type="number"
                       step="0.01"
@@ -456,16 +471,6 @@ export default function LoansPage() {
                       );
                     })()
                   )}
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Fecha de Inicio</label>
-                    <input
-                      type="date"
-                      className="input"
-                      value={formData.start_date}
-                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                      required
-                    />
-                  </div>
                   <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                     <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitting}>
                       {submitting ? 'Generando...' : 'Crear Préstamo'}
@@ -505,7 +510,6 @@ export default function LoansPage() {
               </tr>
             ) : (
               loans.map((loan) => {
-                const statusStyle = getStatusColor(loan.status);
                 return (
                   <tr key={loan.id}>
                     <td data-label="ID">{loan.id}</td>
@@ -532,12 +536,10 @@ export default function LoansPage() {
                     </td>
                     <td data-label="Fin">{loan.end_date ? new Date(loan.end_date).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) : '-'}</td>
                     <td data-label="Estado">
-                      <span style={{
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '4px',
-                        background: statusStyle.bg,
-                        color: statusStyle.color,
-                      }}>
+                      <span className={`badge ${
+                        loan.status === 'orden' ? 'badge-warning' :
+                        loan.status === 'aprobado' ? 'badge-success' : 'badge-secondary'
+                      }`}>
                         {loan.status === 'orden' ? 'Orden' : loan.status === 'aprobado' ? 'Aprobado' : 'Finalizado'}
                       </span>
                     </td>
@@ -615,13 +617,7 @@ export default function LoansPage() {
                     <td>${payment.amount.toFixed(2)}</td>
                     <td>{new Date(payment.due_date).toLocaleDateString('es-AR')}</td>
                     <td>
-                      <span style={{ 
-                        padding: '0.125rem 0.25rem', 
-                        borderRadius: '3px', 
-                        background: payment.is_paid ? '#dcfce7' : '#fee2e2',
-                        color: payment.is_paid ? '#16a34a' : '#dc2626',
-                        fontSize: '0.625rem'
-                      }}>
+                      <span className={`badge ${payment.is_paid ? 'badge-success' : 'badge-danger'}`}>
                         {payment.is_paid ? 'Pagado' : 'Pendiente'}
                       </span>
                     </td>
@@ -657,7 +653,7 @@ export default function LoansPage() {
             <p><strong>Tipo:</strong> {selectedLoan.loan_type_name}</p>
             {selectedLoan.status === 'orden' && (
               <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#fef3c7', borderRadius: 'var(--radius)', color: '#92400e' }}>
-                {getFirstPaymentMessage(selectedLoan.modality)}
+                {getFirstPaymentMessage(selectedLoan.modality, selectedLoan.start_date, selectedLoan.loan_type_name)}
               </div>
             )}
           </div>
@@ -687,14 +683,9 @@ export default function LoansPage() {
                       </td>
                       <td data-label="Fecha">{new Date(payment.due_date).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</td>
                       <td data-label="Estado">
-                        <span style={{
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '4px',
-                          background: payment.is_paid ? '#dcfce7' : '#fee2e2',
-                          color: payment.is_paid ? '#16a34a' : '#dc2626',
-                        }}>
-                          {payment.is_paid ? 'Pagado' : 'Pendiente'}
-                        </span>
+                      <span className={`badge ${payment.is_paid ? 'badge-success' : 'badge-danger'}`}>
+                        {payment.is_paid ? 'Pagado' : 'Pendiente'}
+                      </span>
                       </td>
                       <td data-label="Acciones" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         {!payment.is_paid && new Date(payment.due_date) < new Date() && user.role !== 'admin' && selectedLoan && (
@@ -784,15 +775,12 @@ export default function LoansPage() {
           background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 1000, padding: '1rem'
         }}>
-          <div style={{
-            background: 'white', borderRadius: '0.5rem', padding: '1.5rem',
-            maxWidth: '400px', width: '100%', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-          }}>
-            <h3 style={{ margin: '0 0 1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
-            <p style={{ margin: '0 0 1.5rem', color: '#666' }}>
+          <div className="card" style={{ maxWidth: '400px', width: '100%' }}>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
+            <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
               ¿Estás seguro de que deseas eliminar este préstamo? Esta acción no se puede deshacer.
             </p>
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+            <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
               <button onClick={() => setConfirmDelete({ show: false, id: null })} className="btn btn-secondary">
                 Cancelar
               </button>

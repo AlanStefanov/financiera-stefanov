@@ -12,6 +12,15 @@ const verifyToken = (token: string) => {
   }
 };
 
+const getNextBusinessDay = (date: Date): Date => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + 1);
+  while (next.getDay() === 0 || next.getDay() === 6) {
+    next.setDate(next.getDate() + 1);
+  }
+  return next;
+};
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -74,37 +83,27 @@ export async function PUT(
       
       const loanType = await get('SELECT * FROM loan_types WHERE id = ?', [loan.loan_type_id]);
       if (loanType) {
-        const numPayments = loanType.modality === 'daily' ? 20 : 4;
+        const numPayments = loanType.modality === 'daily' ? 20 : loanType.modality === 'weekly' ? 4 : Number(loanType.duration_months);
         const paymentAmount = (loan.total_amount as number) / numPayments;
-        
-        let currentDate = new Date(loan.start_date as string);
-        
-        if (loanType.modality === 'weekly') {
-          while (currentDate.getDay() !== 5) {
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-        } else {
-          currentDate.setDate(currentDate.getDate() + 1);
-          while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-        }
+        const intervalDays = loanType.modality === 'weekly' ? 7 : loanType.modality === 'monthly' ? 28 : 1;
+        const baseDate = loan.approved_at
+          ? new Date(loan.approved_at as string)
+          : (loan.status === 'aprobado' && loan.updated_at
+            ? new Date(loan.updated_at as string)
+            : new Date(loan.start_date as string));
+        let currentDate = new Date(baseDate);
+        currentDate = loanType.modality === 'daily'
+          ? getNextBusinessDay(currentDate)
+          : new Date(currentDate.setDate(currentDate.getDate() + intervalDays));
 
         for (let i = 0; i < numPayments; i++) {
-          run(
+          await run(
             'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
             [parseInt(id), i + 1, paymentAmount, currentDate.toISOString()]
           );
-          currentDate.setDate(currentDate.getDate() + 1);
-          if (loanType.modality === 'weekly') {
-            while (currentDate.getDay() !== 5) {
-              currentDate.setDate(currentDate.getDate() + 1);
-            }
-          } else {
-            while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-              currentDate.setDate(currentDate.getDate() + 1);
-            }
-          }
+          currentDate = loanType.modality === 'daily'
+            ? getNextBusinessDay(currentDate)
+            : new Date(currentDate.setDate(currentDate.getDate() + intervalDays));
         }
       }
       
@@ -127,46 +126,51 @@ export async function PUT(
         return NextResponse.json({ message: 'No autorizado para cambiar a orden' }, { status: 403 });
       }
 
-      const currentLoan = await get('SELECT * FROM loans WHERE id = ?', [parseInt(id)]);
+      const currentLoan = await get('SELECT l.*, lt.duration_months FROM loans l JOIN loan_types lt ON l.loan_type_id = lt.id WHERE l.id = ?', [parseInt(id)]);
       
-      run('UPDATE loans SET status = ?, updated_at = ? WHERE id = ?', [status, new Date().toISOString(), parseInt(id)]);
+      const nowIso = new Date().toISOString();
+      const isNewApproval = status === 'aprobado' && currentLoan?.status !== 'aprobado';
+      const approvedAt = isNewApproval ? nowIso : (loan.approved_at as string | null);
+
+      if (isNewApproval) {
+        const approvalDate = new Date();
+        const endDate = new Date(approvalDate);
+        endDate.setMonth(endDate.getMonth() + Number(currentLoan?.duration_months || 1));
+        await run(
+          'UPDATE loans SET status = ?, updated_at = ?, approved_at = ?, start_date = ?, end_date = ? WHERE id = ?',
+          [status, nowIso, approvedAt, approvalDate.toISOString(), endDate.toISOString(), parseInt(id)]
+        );
+      } else {
+        await run('UPDATE loans SET status = ?, updated_at = ?, approved_at = ? WHERE id = ?', [status, nowIso, approvedAt, parseInt(id)]);
+      }
 
       const existingPayments = await all('SELECT COUNT(*) as count FROM loan_payments WHERE loan_id = ?', [parseInt(id)]);
       
-      if (status === 'aprobado' && existingPayments[0]?.count === 0) {
+      const shouldGenerateApprovalSchedule =
+        status === 'aprobado' && (currentLoan?.status === 'orden' || Number(existingPayments[0]?.count || 0) === 0);
+
+      if (shouldGenerateApprovalSchedule) {
         const loanType = await get('SELECT * FROM loan_types WHERE id = ?', [currentLoan?.loan_type_id]);
         if (loanType) {
-          const numPayments = loanType.modality === 'daily' ? 20 : 4;
+          await run('DELETE FROM loan_payments WHERE loan_id = ?', [parseInt(id)]);
+
+          const numPayments = loanType.modality === 'daily' ? 20 : loanType.modality === 'weekly' ? 4 : Number(loanType.duration_months);
           const paymentAmount = (currentLoan?.total_amount as number) / numPayments;
+          const intervalDays = loanType.modality === 'weekly' ? 7 : loanType.modality === 'monthly' ? 28 : 1;
           
           let currentDate = new Date();
-          currentDate.setDate(currentDate.getDate() + 1);
-          
-          if (loanType.modality === 'weekly') {
-            while (currentDate.getDay() !== 5) {
-              currentDate.setDate(currentDate.getDate() + 1);
-            }
-          } else {
-            while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-              currentDate.setDate(currentDate.getDate() + 1);
-            }
-          }
+          currentDate = loanType.modality === 'daily'
+            ? getNextBusinessDay(currentDate)
+            : new Date(currentDate.setDate(currentDate.getDate() + intervalDays));
 
           for (let i = 0; i < numPayments; i++) {
-            run(
+            await run(
               'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
               [parseInt(id), i + 1, paymentAmount, currentDate.toISOString()]
             );
-            currentDate.setDate(currentDate.getDate() + 1);
-            if (loanType.modality === 'weekly') {
-              while (currentDate.getDay() !== 5) {
-                currentDate.setDate(currentDate.getDate() + 1);
-              }
-            } else {
-              while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-                currentDate.setDate(currentDate.getDate() + 1);
-              }
-            }
+            currentDate = loanType.modality === 'daily'
+              ? getNextBusinessDay(currentDate)
+              : new Date(currentDate.setDate(currentDate.getDate() + intervalDays));
           }
         }
       }

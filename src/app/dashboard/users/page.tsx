@@ -29,7 +29,6 @@ export default function UsersPage() {
     role: 'operator'
   });
 
-  const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: number | null }>({ show: false, id: null });
   const { showSnackbar } = useSnackbar();
 
@@ -58,7 +57,6 @@ export default function UsersPage() {
     setFormData({ username: '', name: '', lastname: '', phone: '', email: '', password: '', role: 'operator' });
     setEditingUser(null);
     setShowForm(false);
-    setFormMessage(null);
   };
 
   const handleEdit = (user: User) => {
@@ -137,12 +135,12 @@ export default function UsersPage() {
     }
   };
 
-  if (loading) return <div>Cargando...</div>;
+  if (loading) return <div className="empty-state">Cargando...</div>;
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h1>Usuarios</h1>
+        <h1 className="page-title">Usuarios</h1>
         <button onClick={() => { resetForm(); setShowForm(true); }} className="btn btn-primary">
           {showForm ? 'Cancelar' : 'Nuevo Usuario'}
         </button>
@@ -150,21 +148,11 @@ export default function UsersPage() {
 
       {showForm && (
         <div className="card" style={{ marginBottom: '1.5rem' }}>
-          {formMessage && (
-            <div style={{ 
-              padding: '0.75rem 1rem', 
-              marginBottom: '1rem', 
-              borderRadius: 'var(--radius)',
-              background: formMessage.type === 'success' ? 'var(--success)' : 'var(--danger)',
-              color: 'white'
-            }}>
-              {formMessage.text}
-            </div>
-          )}
+          <h3 style={{ marginBottom: '1rem' }}>{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</h3>
           <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Nombre de Usuario</label>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">Nombre de Usuario</label>
                 <input
                   type="text"
                   className="input"
@@ -173,8 +161,8 @@ export default function UsersPage() {
                   required
                 />
               </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Nombre</label>
+              <div className="form-group">
+                <label className="form-label">Nombre</label>
                 <input
                   type="text"
                   className="input"
@@ -183,8 +171,8 @@ export default function UsersPage() {
                   required
                 />
               </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Apellido</label>
+              <div className="form-group">
+                <label className="form-label">Apellido</label>
                 <input
                   type="text"
                   className="input"
@@ -193,8 +181,8 @@ export default function UsersPage() {
                   required
                 />
               </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Teléfono</label>
+              <div className="form-group">
+                <label className="form-label">Teléfono</label>
                 <input
                   type="tel"
                   className="input"
@@ -203,8 +191,8 @@ export default function UsersPage() {
                   required
                 />
               </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email</label>
+              <div className="form-group">
+                <label className="form-label">Email</label>
                 <input
                   type="email"
                   className="input"
@@ -212,8 +200,8 @@ export default function UsersPage() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
               </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>
+              <div className="form-group">
+                <label className="form-label">
                   Contraseña {editingUser ? '(dejar vacío para mantener)' : ''}
                 </label>
                 <input
@@ -224,8 +212,8 @@ export default function UsersPage() {
                   required={!editingUser}
                 />
               </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Rol</label>
+              <div className="form-group">
+                <label className="form-label">Rol</label>
                 <select
                   className="input"
                   value={formData.role}
@@ -236,9 +224,14 @@ export default function UsersPage() {
                 </select>
               </div>
             </div>
-            <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem' }}>
-              {editingUser ? 'Actualizar' : 'Guardar'}
-            </button>
+            <div className="form-actions">
+              <button type="submit" className="btn btn-primary">
+                {editingUser ? 'Actualizar' : 'Guardar'}
+              </button>
+              <button type="button" className="btn btn-secondary" onClick={resetForm}>
+                Cancelar
+              </button>
+            </div>
           </form>
         </div>
       )}
@@ -272,12 +265,7 @@ export default function UsersPage() {
                   <td data-label="Teléfono">{user.phone}</td>
                   <td data-label="Email">{user.email || '-'}</td>
                   <td data-label="Rol">
-                    <span style={{
-                      padding: '0.25rem 0.5rem',
-                      borderRadius: '4px',
-                      background: user.role === 'admin' ? '#dbeafe' : '#f1f5f9',
-                      color: user.role === 'admin' ? '#2563eb' : '#64748b',
-                    }}>
+                    <span className={`badge ${user.role === 'admin' ? 'badge-info' : 'badge-secondary'}`}>
                       {user.role === 'admin' ? 'Administrador' : 'Operador'}
                     </span>
                   </td>
@@ -314,15 +302,12 @@ export default function UsersPage() {
           background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 1000, padding: '1rem'
         }}>
-          <div style={{
-            background: 'white', borderRadius: '0.5rem', padding: '1.5rem',
-            maxWidth: '400px', width: '100%', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-          }}>
-            <h3 style={{ margin: '0 0 1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
-            <p style={{ margin: '0 0 1.5rem', color: '#666' }}>
+          <div className="card" style={{ maxWidth: '400px', width: '100%' }}>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Confirmar eliminación</h3>
+            <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
               ¿Estás seguro de que deseas eliminar este usuario?
             </p>
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+            <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
               <button onClick={() => setConfirmDelete({ show: false, id: null })} className="btn btn-secondary">
                 Cancelar
               </button>
