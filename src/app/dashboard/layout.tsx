@@ -12,10 +12,16 @@ interface User {
   role: string;
 }
 
+interface Settings {
+  company_name: string;
+  company_logo: string;
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [settings, setSettings] = useState<Settings>({ company_name: 'Microcréditos Stefanov', company_logo: '' });
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -23,9 +29,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       window.location.href = '/';
     } else {
       setUser(JSON.parse(storedUser));
+      fetchSettings();
       setLoading(false);
     }
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const stored = localStorage.getItem('user');
+      if (!stored) return;
+      
+      const res = await fetch('/api/settings', {
+        headers: { Authorization: `Bearer ${JSON.parse(stored).token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem('companySettings', JSON.stringify(data));
+        setSettings({
+          company_name: data.company_name || 'Microcréditos Stefanov',
+          company_logo: data.company_logo || '',
+        });
+      }
+    } catch (err) {
+      console.error('Error loading settings:', err);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -59,13 +87,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: '/dashboard/loans', label: 'Préstamos', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
   ];
 
-  if (user.role === 'admin') {
-    navLinks.push(
-      { href: '/dashboard/loan-types', label: 'Tipos Préstamo', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
-      { href: '/dashboard/users', label: 'Usuarios', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
-      { href: '/dashboard/reports', label: 'Reportes', icon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' }
-    );
-  }
+  const adminLinks = [];
 
   return (
     <SnackbarProvider>
@@ -74,8 +96,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="container header-content">
           <Link href="/dashboard" className="header-logo">
             <img 
-              src="/logo.png" 
-              alt="Stefanov"
+              src={settings.company_logo || '/logo.png'} 
+              alt={settings.company_name}
               style={{ 
                 height: '56px', 
                 borderRadius: '6px',
@@ -104,7 +126,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
 
           <nav className="header-nav" id="main-nav">
-            {navLinks.map(link => (
+            {[...navLinks, ...adminLinks].map(link => (
               <Link key={link.href} href={link.href}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
                   <path d={link.icon}/>
@@ -115,6 +137,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
 
           <div className="header-user">
+            {user.role === 'admin' && (
+              <Link href="/dashboard/settings" className="btn btn-secondary" title="Configuración" style={{ padding: '0.5rem' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001.51-1V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+                </svg>
+              </Link>
+            )}
             <div className="header-user-info">
               <div className="header-user-name">{user.name} {user.lastname}</div>
               <div className="header-user-role">{user.role === 'admin' ? 'Administrador' : 'Operador'}</div>
@@ -144,7 +174,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           }}
         >
           <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {navLinks.map(link => (
+            {[...navLinks, ...adminLinks].map(link => (
               <Link 
                 key={link.href} 
                 href={link.href}
@@ -175,8 +205,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <footer className="footer">
         <div className="container footer-content">
-          <p className="footer-text">© 2026 Microcréditos Stefanov. Todos los derechos reservados.</p>
-          <p className="footer-text">Sistema de Gestión de Préstamos v1.2.0</p>
+          <p className="footer-text">© 2026 {settings.company_name}. Todos los derechos reservados.</p>
+          <p className="footer-text">Sistema de Gestión de Préstamos v1.7.0</p>
         </div>
       </footer>
 
