@@ -259,7 +259,7 @@ export default function ClientsPortal() {
               </div>
               <div style={{ textAlign: 'center', padding: '2rem', background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>💰</div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.5rem' }}>Hasta $5.000.000</h3>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.5rem' }}>Hasta $500.000</h3>
                 <p style={{ color: 'var(--text-secondary)' }}>Monto adaptable a tus necesidades, podrás acceder a mayores montos según sea tu puntuación como cliente.</p>
               </div>
               <div style={{ textAlign: 'center', padding: '2rem', background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
