@@ -17,8 +17,9 @@ export default function ClientsPortal() {
   const [showForm, setShowForm] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [calculatorLoading, setCalculatorLoading] = useState(true);
   const [form, setForm] = useState({ name: '', phone: '', address: '', cuil: '', email: '' });
-  const [calculator, setCalculator] = useState({ amount: 500000, loanTypeId: 1 });
+  const [calculator, setCalculator] = useState({ amount: 100000, loanTypeId: 1 });
   const [calculatorResult, setCalculatorResult] = useState<{ total: number; fee: number; totalInterest: number } | null>(null);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -27,15 +28,23 @@ export default function ClientsPortal() {
     fetchLoanTypes();
   }, []);
 
+  useEffect(() => {
+    if (!calculatorLoading && calculator.amount > 0 && calculator.loanTypeId) {
+      calculateFee();
+    }
+  }, [calculator, loanTypes, calculatorLoading]);
+
   const fetchLoanTypes = async () => {
     try {
       const res = await fetch('/api/loan-types');
       if (res.ok) {
         const data = await res.json();
         setLoanTypes(Array.isArray(data) ? data : []);
+        setCalculatorLoading(false);
       }
     } catch (error) {
       console.error('Error fetching loan types:', error);
+      setCalculatorLoading(false);
     } finally {
       setLoading(false);
     }
@@ -62,12 +71,6 @@ export default function ClientsPortal() {
 
     setCalculatorResult({ total, fee, totalInterest });
   };
-
-  useEffect(() => {
-    if (calculator.amount > 0 && calculator.loanTypeId) {
-      calculateFee();
-    }
-  }, [calculator, loanTypes]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,16 +115,30 @@ export default function ClientsPortal() {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
   };
 
+  if (loading || calculatorLoading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p>Cargando...</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <header style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)', padding: '1rem 0' }}>
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Link href="/clients" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ position: 'relative', width: 48, height: 48 }}>
-              <NextImage src="/logo.png" alt="Stefanov" fill style={{ objectFit: 'contain' }} />
-            </div>
-            <span style={{ color: '#fff', fontSize: '1.25rem', fontWeight: 'bold' }}>Stefanov</span>
+      <header className="header">
+        <div className="container header-content">
+          <Link href="/clients" className="header-logo">
+            <img 
+              src="/logo.png" 
+              alt="Stefanov"
+              style={{ height: '56px', borderRadius: '6px' }}
+            />
           </Link>
+          <nav className="header-nav" style={{ display: 'flex', gap: '1rem' }}>
+            <a href="#Inicio" style={{ color: 'var(--primary)' }}>Inicio</a>
+            <a href="#SobreNosotros" style={{ color: 'var(--primary)' }}>Nosotros</a>
+            <a href="#Contacto" style={{ color: 'var(--primary)' }}>Contacto</a>
+          </nav>
         </div>
       </header>
 
@@ -312,7 +329,7 @@ export default function ClientsPortal() {
                     <input
                       type="range"
                       min="50000"
-                      max="1000000"
+                      max="500000"
                       step="50000"
                       value={calculator.amount}
                       onChange={(e) => setCalculator({ ...calculator, amount: parseInt(e.target.value) })}
