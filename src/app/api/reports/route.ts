@@ -26,8 +26,16 @@ export async function GET(request: NextRequest) {
         SUM(l.principal_amount) as total_principal,
         SUM(l.total_amount) as total_with_interest,
         SUM(l.total_amount - l.principal_amount) as total_interest,
-        SUM((l.total_amount - l.principal_amount) * 0.5) as potential_earnings,
-        SUM(CASE WHEN l.status = 'finalizado' THEN (l.total_amount - l.principal_amount) * 0.5 ELSE 0 END) as actual_earnings
+        SUM(CASE 
+          WHEN l.fund_source = 'financial' OR l.fund_source IS NULL THEN (l.total_amount - l.principal_amount) * 0.5 
+          WHEN l.fund_source = 'collections' THEN (l.total_amount - l.principal_amount) * 0.3 
+          ELSE (l.total_amount - l.principal_amount) * 0.5 
+        END) as potential_earnings,
+        SUM(CASE 
+          WHEN l.status = 'finalizado' AND (l.fund_source = 'financial' OR l.fund_source IS NULL) THEN (l.total_amount - l.principal_amount) * 0.5 
+          WHEN l.status = 'finalizado' AND l.fund_source = 'collections' THEN (l.total_amount - l.principal_amount) * 0.3 
+          ELSE 0 
+        END) as actual_earnings
       FROM users u
       LEFT JOIN loans l ON u.id = l.operator_id
       WHERE u.role = 'operator'
@@ -42,6 +50,12 @@ export async function GET(request: NextRequest) {
         SUM(l.total_amount) as total_with_interest,
         SUM(l.total_amount - l.principal_amount) as total_interest
       FROM loans l
+    `);
+
+    const totalPaymentsMade = await get(`
+      SELECT COUNT(*) as total 
+      FROM loan_payments 
+      WHERE is_paid = 1
     `);
 
     const collections = await all(`

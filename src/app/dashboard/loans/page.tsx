@@ -63,7 +63,7 @@ export default function LoansPage() {
   const [loanPayments, setLoanPayments] = useState<LoanPayment[]>([]);
   const [user, setUser] = useState<User>({ role: 'operator' });
   const today = new Date().toISOString().split('T')[0];
-  const [formData, setFormData] = useState({ client_id: '', loan_type_id: '', principal_amount: '' });
+  const [formData, setFormData] = useState({ client_id: '', loan_type_id: '', principal_amount: '', fund_source: 'financial' });
   const [partialPayment, setPartialPayment] = useState<{ payment: LoanPayment; amount: string } | null>(null);
   const [expandedLoanId, setExpandedLoanId] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -171,11 +171,12 @@ export default function LoansPage() {
           client_id: parseInt(formData.client_id),
           loan_type_id: parseInt(formData.loan_type_id),
           principal_amount: parseFloat(formData.principal_amount),
+          fund_source: formData.fund_source,
         }),
       });
 
       if (res.ok) {
-        setFormData({ client_id: '', loan_type_id: '', principal_amount: '' });
+        setFormData({ client_id: '', loan_type_id: '', principal_amount: '', fund_source: 'financial' });
         setShowForm(false);
         fetchData();
         showSnackbar('Préstamo creado exitosamente');
@@ -432,6 +433,13 @@ export default function LoansPage() {
                       onChange={(e) => setFormData({ ...formData, principal_amount: e.target.value })}
                       required
                     />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Fuente de Fondos</label>
+                    <select className="input" value={formData.fund_source} onChange={(e) => setFormData({ ...formData, fund_source: e.target.value })}>
+                      <option value="financial">Capital Financiera</option>
+                      <option value="collections">Cobranzas</option>
+                    </select>
                   </div>
                   {formData.loan_type_id && formData.principal_amount && (
                     (() => {
