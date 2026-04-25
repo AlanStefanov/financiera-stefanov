@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
           try {
             await transporter.sendMail({
               from: smtpUser,
-              to: user.email,
+              to: String(user.email),
               subject: `Nuevo cliente registrado: ${name}`,
               html: emailHtml,
             });
