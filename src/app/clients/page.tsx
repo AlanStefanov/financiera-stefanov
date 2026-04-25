@@ -21,7 +21,7 @@ export default function ClientsPortal() {
   const [form, setForm] = useState({ name: '', phone: '', address: '', cuil: '', email: '', dni_front: '', dni_back: '' });
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
-  const [calculator, setCalculator] = useState({ amount: 100000, loanTypeId: 1 });
+  const [calculator, setCalculator] = useState<{ amount: number; loanTypeId: number | null }>({ amount: 100000, loanTypeId: null });
   const [calculatorResult, setCalculatorResult] = useState<{ total: number; fee: number; totalInterest: number } | null>(null);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -35,6 +35,12 @@ export default function ClientsPortal() {
       calculateFee();
     }
   }, [calculator, loanTypes, calculatorLoading]);
+
+  useEffect(() => {
+    if (!calculatorLoading && !calculator.loanTypeId && loanTypes.length > 0) {
+      setCalculator(prev => ({ ...prev, loanTypeId: loanTypes[0].id }));
+    }
+  }, [calculatorLoading, loanTypes]);
 
   const fetchLoanTypes = async () => {
     try {
@@ -189,14 +195,11 @@ export default function ClientsPortal() {
           <Link href="/clients" className="header-logo">
             <img 
               src="/logo.png" 
-              alt="Stefanov"
+              alt="Microcréditos Stefanov"
               style={{ height: '56px', borderRadius: '6px' }}
             />
           </Link>
           <nav className="header-nav" style={{ display: 'flex', gap: '1rem' }}>
-            <a href="#Inicio" style={{ color: 'var(--primary)' }}>Inicio</a>
-            <a href="#SobreNosotros" style={{ color: 'var(--primary)' }}>Nosotros</a>
-            <a href="#Contacto" style={{ color: 'var(--primary)' }}>Contacto</a>
           </nav>
         </div>
       </header>
@@ -229,14 +232,14 @@ export default function ClientsPortal() {
             </p>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button 
-                onClick={() => { setShowForm(true); setShowCalculator(false); }}
+                onClick={() => { setShowForm(true); setShowCalculator(false); document.getElementById('registro')?.scrollIntoView({ behavior: 'smooth' }); }}
                 className="btn"
                 style={{ background: '#fff', color: '#2563eb', padding: '0.75rem 2rem', fontSize: '1.125rem', fontWeight: '600' }}
               >
                 Registrate
               </button>
               <button 
-                onClick={() => { setShowCalculator(true); setShowForm(false); }}
+                onClick={() => { setShowCalculator(true); setShowForm(false); document.getElementById('calculadora')?.scrollIntoView({ behavior: 'smooth' }); }}
                 className="btn"
                 style={{ background: 'transparent', color: '#fff', border: '2px solid #fff', padding: '0.75rem 2rem', fontSize: '1.125rem' }}
               >
@@ -271,11 +274,11 @@ export default function ClientsPortal() {
         <section style={{ padding: '3rem 0' }}>
           <div className="container" style={{ maxWidth: 600 }}>
             <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', textAlign: 'center' }}>
-              Sobre Nosotros
+              Como continuar el proceso!
             </h2>
             <p style={{ lineHeight: 1.8, color: 'var(--text-secondary)', textAlign: 'center' }}>
-              Stefanov es una empresa líder en microcréditos dedicada a ayudar a emprendedores y trabajadores independientes. 
-              entendemos que cada persona tiene dreams y necesita apoyo financiero para alcanzarlos. Por eso oferecemos 
+              Microcréditos Stefanov se dedicada a colaborar con emprendedores y trabajadores independientes. 
+              Entendemos que cada persona tiene dreams y necesita apoyo financiero para alcanzarlos. Por eso oferecemos 
               préstamos rápidos, con tasas competitivas y un proceso de aprobación simplifyingado.
             </p>
             <p style={{ lineHeight: 1.8, color: 'var(--text-secondary)', textAlign: 'center', marginTop: '1rem' }}>
@@ -432,9 +435,10 @@ export default function ClientsPortal() {
                     <label className="form-label">Tipo de préstamo</label>
                     <select 
                       className="input"
-                      value={calculator.loanTypeId}
-                      onChange={(e) => setCalculator({ ...calculator, loanTypeId: parseInt(e.target.value) })}
+                      value={calculator.loanTypeId ?? ''}
+                      onChange={(e) => setCalculator({ ...calculator, loanTypeId: e.target.value ? parseInt(e.target.value) : null })}
                     >
+                      <option value="">Elegí el tipo de préstamo</option>
                       {loanTypes.map(lt => (
                         <option key={lt.id} value={lt.id}>
                           {lt.name} ({lt.interest_percentage}% interés)
@@ -469,8 +473,7 @@ export default function ClientsPortal() {
 
       <footer style={{ background: '#1e293b', color: '#fff', padding: '2rem 0' }}>
         <div className="container" style={{ textAlign: 'center' }}>
-          <p style={{ marginBottom: '0.5rem' }}>© 2024 Microcréditos Stefanov</p>
-          <p style={{ fontSize: '0.875rem', opacity: 0.7 }}>Tu partner financiero de confianza</p>
+          <p style={{ marginBottom: '0.5rem' }}>© 2026 Microcréditos Stefanov. Todos los derechos reservados.</p>
         </div>
       </footer>
     </div>
