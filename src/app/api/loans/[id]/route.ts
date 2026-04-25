@@ -71,9 +71,28 @@ export async function PUT(
 
     await getDB();
     const body = await request.json();
-    const { status, regenerate_payments } = body;
+    const { status, regenerate_payments, fund_source } = body;
 
     const loan = await get('SELECT * FROM loans WHERE id = ?', [parseInt(id)]);
+    if (!loan) {
+      return NextResponse.json({ message: 'Préstamo no encontrado' }, { status: 404 });
+    }
+
+    if (fund_source && user.role === 'admin') {
+      const oldSource = loan.fund_source;
+      
+      await run('UPDATE loans SET fund_source = ?, updated_at = ? WHERE id = ?', [fund_source, new Date().toISOString(), parseInt(id)]);
+      
+      if (fund_source === 'financial' && oldSource !== 'financial') {
+        await run('INSERT INTO cash_box (amount, type, description, created_by) VALUES (?, ?, ?, ?)',
+          [loan.principal_amount, 'withdrawal', `Préstamo ${id} cambiado a Financial`, user.id]);
+      } else if (fund_source === 'collections' && oldSource === 'financial') {
+        await run('DELETE FROM cash_box WHERE description = ? AND type = ?',
+          [`Préstamo ID ${id}`, 'withdrawal']);
+      }
+      
+      return NextResponse.json({ message: 'Fuente actualizada' });
+    }
     if (!loan) {
       return NextResponse.json({ message: 'Préstamo no encontrado' }, { status: 404 });
     }

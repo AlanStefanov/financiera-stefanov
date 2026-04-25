@@ -78,14 +78,14 @@ export async function GET(request: NextRequest) {
         SELECT cb.*, u.name as created_by_name 
         FROM cash_box cb 
         LEFT JOIN users u ON cb.created_by = u.id 
-        WHERE cb.created_by = ?
+        WHERE cb.created_by = ? OR cb.assigned_to = ?
         ORDER BY cb.created_at DESC
-      `, [user.id]);
+      `, [user.id, user.id]);
 
       totalFinancial = await get(`
         SELECT COALESCE(SUM(amount), 0) as total 
         FROM cash_box 
-        WHERE type = 'deposit' AND created_by = ?
+        WHERE assigned_to = ?
       `, [user.id]);
       
       totalCollections = await get(`
@@ -101,10 +101,9 @@ export async function GET(request: NextRequest) {
       `, [user.id]);
 
       totalCollectedAll = await get(`
-        SELECT COALESCE(SUM(lp.paid_amount), 0) as total 
+        SELECT COALESCE(SUM(paid_amount), 0) as total 
         FROM loan_payments lp 
-        JOIN loans l ON lp.loan_id = l.id 
-        WHERE l.operator_id = ? AND lp.is_paid = 1
+        WHERE lp.paid_by = ? AND lp.is_paid = 1
       `, [user.id]);
 
       loansFromFinancial = await get(`
@@ -149,15 +148,22 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { amount, type, description } = body;
+    const { amount, type, description, assigned_to } = body;
 
     if (!amount || !type || !['deposit', 'collection', 'withdrawal'].includes(type)) {
       return NextResponse.json({ message: 'Datos inválidos' }, { status: 400 });
     }
 
+    let assignedToUser = null;
+    if (type === 'deposit' && user.role === 'admin' && assigned_to) {
+      assignedToUser = assigned_to;
+    } else if (type === 'deposit') {
+      assignedToUser = user.id;
+    }
+
     await run(
-      'INSERT INTO cash_box (amount, type, description, created_by) VALUES (?, ?, ?, ?)',
-      [amount, type, description || null, user.id]
+      'INSERT INTO cash_box (amount, type, description, created_by, assigned_to) VALUES (?, ?, ?, ?, ?)',
+      [amount, type, description || null, user.id, assignedToUser]
     );
 
     return NextResponse.json({ message: 'Movimiento registrado' }, { status: 201 });

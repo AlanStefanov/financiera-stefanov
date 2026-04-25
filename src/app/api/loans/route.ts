@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     const decoded = jwt.verify(token, getJwtSecret()) as { id: number };
 
     const body = await request.json();
-    const { client_id, loan_type_id, principal_amount, regenerate_payments, start_date } = body;
+    const { client_id, loan_type_id, principal_amount, regenerate_payments, start_date, fund_source } = body;
 
     console.log('Creating loan:', { client_id, loan_type_id, principal_amount, start_date });
 
@@ -153,10 +153,17 @@ export async function POST(request: NextRequest) {
     console.log('FK check:', { clientExists, operatorExists, loanTypeExists });
 
     const result = await run(
-      `INSERT INTO loans (client_id, operator_id, loan_type_id, principal_amount, total_amount, status)
-       VALUES (?, ?, ?, ?, ?, 'orden')`,
-      [client_id, decoded.id, loan_type_id, principal_amount, totalAmount]
+      `INSERT INTO loans (client_id, operator_id, loan_type_id, principal_amount, total_amount, status, fund_source)
+       VALUES (?, ?, ?, ?, ?, 'orden', ?)`,
+      [client_id, decoded.id, loan_type_id, principal_amount, totalAmount, fund_source || 'financial']
     );
+
+    if (fund_source === 'financial') {
+      await run(
+        'INSERT INTO cash_box (amount, type, description, created_by) VALUES (?, ?, ?, ?)',
+        [principal_amount, 'withdrawal', `Préstamo ID ${result.lastID}`, decoded.id]
+      );
+    }
 
     const loan = await get('SELECT * FROM loans WHERE id = ?', [result.lastID]);
 
