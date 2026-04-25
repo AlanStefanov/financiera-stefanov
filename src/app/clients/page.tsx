@@ -279,7 +279,7 @@ export default function ClientsPortal() {
             <p style={{ lineHeight: 1.8, color: 'var(--text-secondary)', textAlign: 'center' }}>
               Microcréditos Stefanov se dedicada a colaborar con emprendedores y trabajadores independientes. 
               Entendemos que cada persona tiene dreams y necesita apoyo financiero para alcanzarlos. Por eso oferecemos 
-              préstamos rápidos, con tasas competitivas y un proceso de aprobación simplifyingado.
+              préstamos rápidos, con tasas competitivas y un proceso de aprobación simplificado.
             </p>
             <p style={{ lineHeight: 1.8, color: 'var(--text-secondary)', textAlign: 'center', marginTop: '1rem' }}>
               Nuestro equipo de operadores te acompañará en todo el proceso, desde la solicitud hasta el cobro de cuotas, 
