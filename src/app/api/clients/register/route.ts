@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     await getDB();
     const body = await request.json();
-    const { name, phone, address, cuil, email } = body;
+    const { name, phone, address, cuil, dni_front, dni_back } = body;
 
     if (!name || !phone || !cuil) {
       return NextResponse.json({ message: 'Faltan campos requeridos' }, { status: 400 });
@@ -17,14 +17,13 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await run(
-      'INSERT INTO clients (name, phone, address, cuil, is_active) VALUES (?, ?, ?, ?, ?)',
-      [name, phone, address || null, cuil, 1]
+      'INSERT INTO clients (name, phone, address, cuil, dni_front, dni_back, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, phone, address || null, cuil, dni_front || null, dni_back || null, 1]
     );
 
     return NextResponse.json({ 
       message: 'Registro exitoso. Te contactaremos pronto.',
-      clientId: result.lastID,
-      sendEmail: !!email
+      clientId: result.lastID
     }, { status: 201 });
   } catch (error: any) {
     console.error('Error registering client:', error);

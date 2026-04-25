@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import NextImage from 'next/image';
 
@@ -18,7 +18,9 @@ export default function ClientsPortal() {
   const [showCalculator, setShowCalculator] = useState(false);
   const [loading, setLoading] = useState(true);
   const [calculatorLoading, setCalculatorLoading] = useState(true);
-  const [form, setForm] = useState({ name: '', phone: '', address: '', cuil: '', email: '' });
+  const [form, setForm] = useState({ name: '', phone: '', address: '', cuil: '', email: '', dni_front: '', dni_back: '' });
+  const frontInputRef = useRef<HTMLInputElement>(null);
+  const backInputRef = useRef<HTMLInputElement>(null);
   const [calculator, setCalculator] = useState({ amount: 100000, loanTypeId: 1 });
   const [calculatorResult, setCalculatorResult] = useState<{ total: number; fee: number; totalInterest: number } | null>(null);
   const [message, setMessage] = useState('');
@@ -47,6 +49,56 @@ export default function ClientsPortal() {
       setCalculatorLoading(false);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const compressImage = (base64Data: string, maxSizeKB: number = 512): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = document.createElement('img');
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        const maxDimension = 1200;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = (height * maxDimension) / width;
+            width = maxDimension;
+          } else {
+            width = (width * maxDimension) / height;
+            height = maxDimension;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        let quality = 0.8;
+        let result = canvas.toDataURL('image/jpeg', quality);
+        
+        while (result.length > maxSizeKB * 1024 && quality > 0.3) {
+          quality -= 0.1;
+          result = canvas.toDataURL('image/jpeg', quality);
+        }
+        
+        resolve(result);
+      };
+      img.src = base64Data;
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, field: 'dni_front' | 'dni_back') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const compressed = await compressImage(reader.result as string);
+        setForm(prev => ({ ...prev, [field]: compressed }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -81,13 +133,20 @@ export default function ClientsPortal() {
       const res = await fetch('/api/clients/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
+        body: JSON.stringify({
+          name: form.name,
+          phone: form.phone,
+          address: form.address,
+          cuil: form.cuil,
+          dni_front: form.dni_front,
+          dni_back: form.dni_back
+        })
       });
 
       const data = await res.json();
       if (res.ok) {
         setMessage('✓ Registro exitoso. Te contactaremos pronto.');
-        setForm({ name: '', phone: '', address: '', cuil: '', email: '' });
+        setForm({ name: '', phone: '', address: '', cuil: '', email: '', dni_front: '', dni_back: '' });
         setShowForm(false);
 
         if (form.email) {
@@ -174,7 +233,7 @@ export default function ClientsPortal() {
                 className="btn"
                 style={{ background: '#fff', color: '#2563eb', padding: '0.75rem 2rem', fontSize: '1.125rem', fontWeight: '600' }}
               >
-                Solicitar Préstamo
+                Registrate
               </button>
               <button 
                 onClick={() => { setShowCalculator(true); setShowForm(false); }}
@@ -231,7 +290,7 @@ export default function ClientsPortal() {
             <div className="container" style={{ maxWidth: 600 }}>
               <div className="card">
                 <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', textAlign: 'center' }}>
-                  Solicitar Préstamo
+                  Registrate
                 </h2>
                 
                 {message && (
@@ -297,6 +356,36 @@ export default function ClientsPortal() {
                         value={form.address}
                         onChange={(e) => setForm({ ...form, address: e.target.value })}
                       />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">DNI (Frente)</label>
+                      <input
+                        ref={frontInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileChange(e, 'dni_front')}
+                        style={{ padding: '0.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', width: '100%' }}
+                      />
+                      {form.dni_front && (
+                        <div style={{ marginTop: '0.5rem' }}>
+                          <NextImage src={form.dni_front} alt="DNI frente" width={150} height={100} style={{ objectFit: 'cover', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} unoptimized />
+                        </div>
+                      )}
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">DNI (Dorso)</label>
+                      <input
+                        ref={backInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileChange(e, 'dni_back')}
+                        style={{ padding: '0.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', width: '100%' }}
+                      />
+                      {form.dni_back && (
+                        <div style={{ marginTop: '0.5rem' }}>
+                          <NextImage src={form.dni_back} alt="DNI dorso" width={150} height={100} style={{ objectFit: 'cover', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} unoptimized />
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="form-actions">
