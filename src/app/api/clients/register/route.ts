@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       [name, phone, address || null, cuil, dni_front || null, dni_back || null, 1]
     );
 
-    const usersToNotify = await all('SELECT email FROM users WHERE role IN ("admin", "operator")');
+    const usersToNotify = await all("SELECT email FROM users WHERE role IN ('admin', 'operator')");
 
     const smtpHost = process.env.SMTP_HOST?.trim() || 'smtp.gmail.com';
     const smtpUser = process.env.SMTP_USER?.trim();
