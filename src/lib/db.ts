@@ -34,7 +34,7 @@ export const getDB = async () => {
 
 export const run = async (sql: string, params: any[] = []) => {
   const result = await getClient().execute({ sql, args: params });
-  return { lastID: result.lastInsertRowid, changes: result.rowsAffected };
+  return { lastID: Number(result.lastInsertRowid), changes: result.rowsAffected };
 };
 
 export const get = async (sql: string, params: any[] = []) => {

@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       message: 'Registro exitoso. Te contactaremos pronto.',
-      clientId: result.lastID
+      clientId: Number(result.lastID)
     }, { status: 201 });
   } catch (error: any) {
     console.error('Error registering client:', error);
