@@ -25,6 +25,7 @@ export default function ClientsPortal() {
   const [calculatorResult, setCalculatorResult] = useState<{ total: number; fee: number; totalInterest: number } | null>(null);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   useEffect(() => {
     fetchLoanTypes();
@@ -151,9 +152,15 @@ export default function ClientsPortal() {
 
       const data = await res.json();
       if (res.ok) {
-        setMessage('✓ Registro exitoso. Te contactaremos pronto.');
-        setForm({ name: '', phone: '', address: '', cuil: '', email: '', dni_front: '', dni_back: '' });
-        setShowForm(false);
+        setSubmitSuccess(true);
+        setTimeout(() => {
+          setSubmitting(false);
+          setSubmitSuccess(false);
+          setMessage('✓ Registro exitoso. Te contactaremos pronto.');
+          setForm({ name: '', phone: '', address: '', cuil: '', email: '', dni_front: '', dni_back: '' });
+          setShowForm(false);
+        }, 2500);
+        return;
 
         if (form.email) {
           try {
@@ -171,7 +178,6 @@ export default function ClientsPortal() {
       }
     } catch (error) {
       setMessage('Error al registrar');
-    } finally {
       setSubmitting(false);
     }
   };
@@ -197,19 +203,36 @@ export default function ClientsPortal() {
           zIndex: 9999, backdropFilter: 'blur(4px)'
         }}>
           <div style={{
-            background: '#fff', borderRadius: 12, padding: '2.5rem 3rem', textAlign: 'center',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)', minWidth: 300
+            background: '#fff', borderRadius: 12, padding: submitSuccess ? '2.5rem 3rem' : '2.5rem 3rem', textAlign: 'center',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)', minWidth: 320, maxWidth: 400
           }}>
-            <div style={{
-              width: 48, height: 48, border: '4px solid #e5e7eb', borderTopColor: '#2563eb',
-              borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 1rem'
-            }} />
-            <p style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b', margin: 0 }}>
-              Enviando solicitud
-            </p>
-            <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.5rem' }}>
-              Por favor esperá un momento...
-            </p>
+            {submitSuccess ? (
+              <>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
+                <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#16a34a', margin: '0 0 0.5rem' }}>
+                  ¡Felicitaciones!
+                </p>
+                <p style={{ fontSize: '0.95rem', color: '#334155', margin: '0 0 0.25rem', lineHeight: 1.5 }}>
+                  Ya estás registrado como cliente de Microcréditos Stefanov
+                </p>
+                <p style={{ fontSize: '0.875rem', color: '#64748b', margin: 0 }}>
+                  Por favor contactate con tu operador de créditos!
+                </p>
+              </>
+            ) : (
+              <>
+                <div style={{
+                  width: 48, height: 48, border: '4px solid #e5e7eb', borderTopColor: '#2563eb',
+                  borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 1rem'
+                }} />
+                <p style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b', margin: 0 }}>
+                  Enviando solicitud
+                </p>
+                <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.5rem' }}>
+                  Por favor esperá un momento...
+                </p>
+              </>
+            )}
           </div>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>

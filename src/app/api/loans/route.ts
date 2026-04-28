@@ -137,12 +137,19 @@ export async function POST(request: NextRequest) {
 
     const totalAmount = principal_amount * (1 + (loanType.interest_percentage as number) / 100);
     
+    const start_date_value = start_date ? new Date(start_date) : new Date();
+    const durationMonths = (loanType.duration_months as number) || 1;
+    const end_date_value = new Date(start_date_value);
+    end_date_value.setMonth(end_date_value.getMonth() + durationMonths);
+    
     console.log('Loan data:', { 
       client_id, 
       operator_id: decoded.id, 
       loan_type_id, 
       principal_amount, 
-      totalAmount 
+      totalAmount,
+      start_date: start_date_value.toISOString(),
+      end_date: end_date_value.toISOString()
     });
 
     // Verify foreign keys exist
@@ -153,9 +160,9 @@ export async function POST(request: NextRequest) {
     console.log('FK check:', { clientExists, operatorExists, loanTypeExists });
 
     const result = await run(
-      `INSERT INTO loans (client_id, operator_id, loan_type_id, principal_amount, total_amount, status, fund_source)
-       VALUES (?, ?, ?, ?, ?, 'orden', ?)`,
-      [client_id, decoded.id, loan_type_id, principal_amount, totalAmount, fund_source || 'financial']
+      `INSERT INTO loans (client_id, operator_id, loan_type_id, principal_amount, total_amount, start_date, end_date, status, fund_source)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'orden', ?)`,
+      [client_id, decoded.id, loan_type_id, principal_amount, totalAmount, start_date_value.toISOString(), end_date_value.toISOString(), fund_source || 'financial']
     );
 
     if (fund_source === 'financial') {
