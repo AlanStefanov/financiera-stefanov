@@ -1,23 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-async function fetchBcraWithRetry(cuil: string, retries = 10, delayMs = 600000): Promise<any> {
+async function fetchBcraWithRetry(cuil: string, retries = 3, delayMs = 2000): Promise<any> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const response = await fetch(`https://api.bcra.gob.ar/centraldedeudores/v1.0/Deudas/${cuil}`, {
         headers: {
           'Accept': 'application/json, text/plain, */*',
           'Accept-Language': 'es-AR,es;q=0.9,en;q=0.8',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
           'Referer': 'https://www.bcra.gob.ar/BCRAyVos/Situacion_Crediticia.asp',
+          'Origin': 'https://www.bcra.gob.ar',
         },
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(30000),
       });
 
       if (response.status === 200) {
-        return { success: true, data: await response.json() };
+        const data = await response.json();
+        console.log(`BCRA success for CUIL ${cuil}:`, JSON.stringify(data).slice(0, 500));
+        return { success: true, data };
       }
       
-      console.log(`BCRA attempt ${attempt} failed with status ${response.status}, retrying in ${delayMs}ms...`);
+      const errorText = await response.text().catch(() => 'no response body');
+      console.log(`BCRA attempt ${attempt} failed with status ${response.status} for CUIL ${cuil}:`, errorText.slice(0, 200), `retrying in ${delayMs}ms...`);
     } catch (error: any) {
       console.log(`BCRA attempt ${attempt} error: ${error.message}, retrying in ${delayMs}ms...`);
     }
