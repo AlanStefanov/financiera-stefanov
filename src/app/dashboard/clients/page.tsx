@@ -229,6 +229,25 @@ export default function ClientsPage() {
       return;
     }
 
+    if (client.bcra_status && client.bcra_updated_at) {
+      const lastUpdate = new Date(client.bcra_updated_at);
+      const fourMonthsAgo = new Date();
+      fourMonthsAgo.setMonth(fourMonthsAgo.getMonth() - 4);
+      
+      if (lastUpdate > fourMonthsAgo && !['api_fail', 'no_data', 'error'].includes(client.bcra_status)) {
+        setBcraModal({
+          title: 'Estado BCRA ya consultado',
+          lines: [
+            { label: 'Estado actual', value: client.bcra_status },
+            { label: 'Última actualización', value: lastUpdate.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) },
+            { label: 'Info', value: 'El estado BCRA cambia cada 4 meses. Podés reconsultar si es necesario.' }
+          ],
+          isError: false
+        });
+        return;
+      }
+    }
+
     setConsultingBcra(clientId);
 
     try {
