@@ -190,6 +190,31 @@ export default function ClientsPortal() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {submitting && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 12, padding: '2.5rem 3rem', textAlign: 'center',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)', minWidth: 300
+          }}>
+            <div style={{
+              width: 48, height: 48, border: '4px solid #e5e7eb', borderTopColor: '#2563eb',
+              borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 1rem'
+            }} />
+            <p style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b', margin: 0 }}>
+              Enviando solicitud
+            </p>
+            <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.5rem' }}>
+              Por favor esperá un momento...
+            </p>
+          </div>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
+
       <header className="header">
         <div className="container header-content">
           <Link href="/clients" className="header-logo">
