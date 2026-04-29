@@ -41,7 +41,7 @@ export async function PUT(
 
       if (newIsPaid && !payment.is_paid) {
         const loan = await get('SELECT l.*, lt.modality FROM loans l JOIN loan_types lt ON l.loan_type_id = lt.id WHERE l.id = ?', [loanId]);
-        if (loan && (loan.fund_source === 'collections' || loan.fund_source === null)) {
+        if (loan) {
           const collectionDate = paidDate ? new Date(paidDate).toLocaleDateString('es-AR') : new Date().toLocaleDateString('es-AR');
           await run('INSERT INTO cash_box (amount, type, description, created_by, assigned_to) VALUES (?, ?, ?, ?, ?)',
             [partial_amount, 'collection', `Cobro cuota ${payment.payment_number} - Préstamo ${loanId} - ${collectionDate}`, userId, userId]);
@@ -53,7 +53,7 @@ export async function PUT(
           [amount, new Date().toISOString(), userId, parseInt(id)]);
 
         const loan = await get('SELECT l.*, lt.modality FROM loans l JOIN loan_types lt ON l.loan_type_id = lt.id WHERE l.id = ?', [loanId]);
-        if (loan && (loan.fund_source === 'collections' || loan.fund_source === null)) {
+        if (loan) {
           const collectionDate = new Date().toLocaleDateString('es-AR');
           await run('INSERT INTO cash_box (amount, type, description, created_by, assigned_to) VALUES (?, ?, ?, ?, ?)',
             [amount, 'collection', `Cobro cuota ${payment.payment_number} - Préstamo ${loanId} - ${collectionDate}`, userId, userId]);
