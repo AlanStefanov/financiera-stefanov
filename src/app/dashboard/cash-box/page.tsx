@@ -14,14 +14,23 @@ interface CashBoxData {
   };
 }
 
+interface User {
+  role: string;
+}
+
 export default function CashBoxPage() {
   const [data, setData] = useState<CashBoxData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ amount: '', type: 'deposit', description: '' });
   const [message, setMessage] = useState('');
+  const [user, setUser] = useState<User>({ role: 'operator' });
 
   useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
     fetchCashBox();
   }, []);
 
@@ -75,9 +84,11 @@ export default function CashBoxPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <h1 className="page-title">Caja</h1>
-        <button onClick={() => setShowForm(!showForm)} className="btn btn-primary">
-          {showForm ? 'Cancelar' : 'Nuevo Movimiento'}
-        </button>
+        {user.role === 'admin' && (
+          <button onClick={() => setShowForm(!showForm)} className="btn btn-primary">
+            {showForm ? 'Cancelar' : 'Nuevo Movimiento'}
+          </button>
+        )}
       </div>
 
       {message && (
@@ -111,7 +122,7 @@ export default function CashBoxPage() {
         </div>
       </div>
 
-      {showForm && (
+      {showForm && user.role === 'admin' && (
         <div className="card" style={{ marginBottom: '1.5rem' }}>
           <h3>Nuevo Movimiento</h3>
           <form onSubmit={handleSubmit}>
