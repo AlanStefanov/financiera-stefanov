@@ -248,7 +248,7 @@ export default function ClientsPortal() {
             />
           </Link>
           <nav className="header-nav" style={{ display: 'flex', gap: '1rem' }}>
-          </nav>
+           </nav>
         </div>
       </header>
 
@@ -518,6 +518,52 @@ export default function ClientsPortal() {
           </section>
         )}
       </div>
+
+      <a
+        href="https://wa.me/5492213615101?text=Hola,%20quiero%20consultar%20sobre%20microcréditos"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          background: '#25D366',
+          color: '#fff',
+          width: 56,
+          height: 56,
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 12px rgba(37, 211, 102, 0.4)',
+          zIndex: 1000,
+          textDecoration: 'none',
+          transition: 'transform 0.2s',
+        }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.1)'; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+        aria-label="Contactanos por WhatsApp"
+      >
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+          <path d="M12.04 21.846c-1.42 0-2.839-.363-4.074-1.055l-4.416 1.146 1.159-4.302C2.988 15.592 2.28 13.784 2.28 11.923 2.28 6.695 6.483 2.49 11.71 2.49c2.502 0 4.855.976 6.623 2.744a9.319 9.319 0 012.745 6.623c0 5.228-4.203 9.49-9.358 9.49zm8.548-18.478A10.422 10.422 0 0011.71 1.49C5.934 1.49 1.28 6.144 1.28 11.923c0 1.963.523 3.876 1.518 5.552l-1.027 3.81 3.83-1.002a10.58 10.58 0 005.109 1.352c5.776 0 10.47-4.694 10.47-10.47 0-2.798-1.087-5.43-3.062-7.413z"/>
+        </svg>
+      </a>
+
+      <style>{`
+        @media (max-width: 640px) {
+          a[aria-label="Contactanos por WhatsApp"] {
+            bottom: 12px !important;
+            right: 12px !important;
+            width: 50px !important;
+            height: 50px !important;
+          }
+          a[aria-label="Contactanos por WhatsApp"] svg {
+            width: 22px !important;
+            height: 22px !important;
+          }
+        }
+      `}</style>
 
       <footer style={{ background: '#1e293b', color: '#fff', padding: '2rem 0' }}>
         <div className="container" style={{ textAlign: 'center' }}>
