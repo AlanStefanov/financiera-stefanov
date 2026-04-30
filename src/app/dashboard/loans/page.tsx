@@ -85,9 +85,29 @@ export default function LoansPage() {
     return normalized || 'daily';
   };
 
+  const formatDate = (dateStr: string | null | undefined): string => {
+    if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return '-';
+    const date = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T12:00:00');
+    if (isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+  };
+
   const getFirstPaymentMessage = (modality: string, startDate: string, loanTypeName?: string) => {
     const normalized = normalizeModality(modality, loanTypeName);
-    const base = new Date(startDate + 'T12:00:00');
+
+    let base: Date;
+    if (startDate && startDate !== 'null' && startDate !== 'undefined') {
+      base = new Date(startDate.includes('T') ? startDate : startDate + 'T12:00:00');
+    } else {
+      base = new Date();
+      base.setHours(12, 0, 0, 0);
+    }
+
+    if (isNaN(base.getTime())) {
+      base = new Date();
+      base.setHours(12, 0, 0, 0);
+    }
+
     const nextDaily = new Date(base);
     nextDaily.setDate(base.getDate() + 1);
     const nextWeekly = new Date(base);
@@ -96,13 +116,13 @@ export default function LoansPage() {
     nextMonthly.setDate(base.getDate() + 28);
 
     if (normalized === 'daily') {
-      const tomorrowStr = nextDaily.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+      const tomorrowStr = nextDaily.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' });
       return 'Su primera cuota será el ' + tomorrowStr;
     } else if (normalized === 'weekly') {
-      const nextWeekStr = nextWeekly.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+      const nextWeekStr = nextWeekly.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' });
       return 'Su primera cuota será el ' + nextWeekStr;
     } else {
-      const nextMonthStr = nextMonthly.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+      const nextMonthStr = nextMonthly.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' });
       return 'Su primera cuota será dentro de 28 días (' + nextMonthStr + ')';
     }
   };
@@ -272,8 +292,9 @@ export default function LoansPage() {
 
   const handleSendOverdueReminder = (payment: LoanPayment, clientName: string, clientPhone: string) => {
     const phone = clientPhone.replace(/\D/g, '');
-    const daysOverdue = Math.ceil((new Date().getTime() - new Date(payment.due_date).getTime()) / (1000 * 60 * 60 * 24));
-    const message = `Hola ${clientName}, te recordamo$ que tienes una cuota atrasada de $${payment.amount.toLocaleString('es-AR')} que venció el ${new Date(payment.due_date).toLocaleDateString('es-AR')}. \n\nLlevas ${daysOverdue} día${daysOverdue > 1 ? 's' : ''} de atraso. Por favor comunicate con nosotros para regularizar tu situación.\n\nTu operador de créditos te espera para ayudarte.`;
+    const dueDate = new Date(payment.due_date.includes('T') ? payment.due_date : payment.due_date + 'T12:00:00');
+    const daysOverdue = isNaN(dueDate.getTime()) ? 0 : Math.ceil((new Date().getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+    const message = `Hola ${clientName}, te recordamo$ que tienes una cuota atrasada de $${payment.amount.toLocaleString('es-AR')} que venció el ${formatDate(payment.due_date)}. \n\nLlevas ${daysOverdue} día${daysOverdue > 1 ? 's' : ''} de atraso. Por favor comunicate con nosotros para regularizar tu situación.\n\nTu operador de créditos te espera para ayudarte.`;
     window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
   };
 
@@ -539,10 +560,10 @@ export default function LoansPage() {
                       {loan.status === 'orden' ? (
                         <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Pendiente aprobación</span>
                       ) : (
-                        new Date(loan.start_date).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })
+                        formatDate(loan.start_date)
                       )}
                     </td>
-                    <td data-label="Fin">{loan.end_date ? new Date(loan.end_date).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) : '-'}</td>
+                    <td data-label="Fin">{formatDate(loan.end_date)}</td>
                     <td data-label="Estado">
                       <span className={`badge ${
                         loan.status === 'orden' ? 'badge-warning' :
@@ -623,7 +644,7 @@ export default function LoansPage() {
                   <tr key={payment.id}>
                     <td>{payment.payment_number}</td>
                     <td>${payment.amount.toFixed(2)}</td>
-                    <td>{new Date(payment.due_date).toLocaleDateString('es-AR')}</td>
+                    <td>{formatDate(payment.due_date)}</td>
                     <td>
                       <span className={`badge ${payment.is_paid ? 'badge-success' : 'badge-danger'}`}>
                         {payment.is_paid ? 'Pagado' : 'Pendiente'}
@@ -689,14 +710,14 @@ export default function LoansPage() {
                           </div>
                         )}
                       </td>
-                      <td data-label="Fecha">{new Date(payment.due_date).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</td>
+                      <td data-label="Fecha">{formatDate(payment.due_date)}</td>
                       <td data-label="Estado">
                       <span className={`badge ${payment.is_paid ? 'badge-success' : 'badge-danger'}`}>
                         {payment.is_paid ? 'Pagado' : 'Pendiente'}
                       </span>
                       </td>
                       <td data-label="Acciones" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        {!payment.is_paid && new Date(payment.due_date) < new Date() && user.role !== 'admin' && selectedLoan && (
+                        {!payment.is_paid && (() => { const due = new Date(payment.due_date.includes('T') ? payment.due_date : payment.due_date + 'T12:00:00'); return !isNaN(due.getTime()) && due < new Date(); })() && user.role !== 'admin' && selectedLoan && (
                           <button
                             onClick={() => handleSendOverdueReminder(payment, selectedLoan.client_name, selectedLoan.client_phone)}
                             className="btn"
