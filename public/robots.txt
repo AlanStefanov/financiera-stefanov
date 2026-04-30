@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /dashboard/
+Disallow: /api/
+
+Sitemap: https://financiera-stefanov.vercel.app/sitemap.xml
