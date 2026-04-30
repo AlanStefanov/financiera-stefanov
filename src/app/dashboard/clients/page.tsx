@@ -182,6 +182,7 @@ export default function ClientsPage() {
       cuil: client.cuil || ''
     });
     setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleToggleActive = async (id: number, currentStatus: number) => {
