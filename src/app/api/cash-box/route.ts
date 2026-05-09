@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
       totalFinancial = await get(`
         SELECT COALESCE(SUM(amount), 0) as total 
         FROM cash_box 
-        WHERE assigned_to = ?
+        WHERE type = 'deposit' AND assigned_to = ?
       `, [user.id]);
       
       totalCollections = await get(`
