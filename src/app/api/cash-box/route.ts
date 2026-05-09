@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       totalWithdrawn = await get(`
         SELECT COALESCE(SUM(principal_amount), 0) as total 
         FROM loans 
-        WHERE status = 'aprobado'
+        WHERE status IN ('aprobado', 'finalizado')
       `);
 
       totalCollectedAll = await get(`
@@ -65,13 +65,13 @@ export async function GET(request: NextRequest) {
       loansFromFinancial = await get(`
         SELECT COALESCE(SUM(principal_amount), 0) as total 
         FROM loans 
-        WHERE fund_source = 'financial'
+        WHERE fund_source = 'financial' AND status IN ('aprobado', 'finalizado')
       `);
       
       loansFromCollections = await get(`
         SELECT COALESCE(SUM(principal_amount), 0) as total 
         FROM loans 
-        WHERE fund_source = 'collections' OR fund_source IS NULL
+        WHERE (fund_source = 'collections' OR fund_source IS NULL) AND status IN ('aprobado', 'finalizado')
       `);
     } else {
       cashBox = await all(`
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
       totalWithdrawn = await get(`
         SELECT COALESCE(SUM(principal_amount), 0) as total 
         FROM loans 
-        WHERE operator_id = ? AND status = 'aprobado'
+        WHERE operator_id = ? AND status IN ('aprobado', 'finalizado')
       `, [user.id]);
 
       totalCollectedAll = await get(`
@@ -109,13 +109,13 @@ export async function GET(request: NextRequest) {
       loansFromFinancial = await get(`
         SELECT COALESCE(SUM(principal_amount), 0) as total 
         FROM loans 
-        WHERE operator_id = ? AND fund_source = 'financial'
+        WHERE operator_id = ? AND fund_source = 'financial' AND status IN ('aprobado', 'finalizado')
       `, [user.id]);
       
       loansFromCollections = await get(`
         SELECT COALESCE(SUM(principal_amount), 0) as total 
         FROM loans 
-        WHERE operator_id = ? AND (fund_source = 'collections' OR fund_source IS NULL)
+        WHERE operator_id = ? AND (fund_source = 'collections' OR fund_source IS NULL) AND status IN ('aprobado', 'finalizado')
       `, [user.id]);
     }
 
@@ -128,8 +128,8 @@ export async function GET(request: NextRequest) {
         loans_from_financial: loansFromFinancial?.total || 0,
         loans_from_collections: loansFromCollections?.total || 0,
         collected_all: totalCollectedAll?.total || 0,
-        available: Number(totalFinancial?.total || 0) - Number(totalWithdrawn?.total || 0),
-        caja_completa: (Number(totalFinancial?.total || 0) - Number(totalWithdrawn?.total || 0)) + Number(totalCollectedAll?.total || 0)
+        available: Number(totalFinancial?.total || 0) - Number(loansFromFinancial?.total || 0),
+        caja_completa: Number(totalCollectedAll?.total || 0) - Number(loansFromCollections?.total || 0)
       }
     });
   } catch (error) {
