@@ -85,12 +85,16 @@ export default function DashboardPage() {
           ? loans.filter((l: any) => l.status === 'aprobado') 
           : [];
         
+        const allApprovedLoans = Array.isArray(loans)
+          ? loans.filter((l: any) => l.status === 'aprobado' || l.status === 'finalizado')
+          : [];
+        
         const activeLoansCount = activeAndApprovedLoans.length;
         
         const overduePaymentsCount = Array.isArray(overdue) ? overdue.length : 0;
         setOverduePayments(Array.isArray(overdue) ? overdue : []);
         
-        const totalLoanedSum = activeAndApprovedLoans.reduce((sum: number, l: any) => {
+        const totalLoanedSum = allApprovedLoans.reduce((sum: number, l: any) => {
           const principal = parseFloat(l.principal_amount) || 0;
           return sum + principal;
         }, 0);
@@ -99,7 +103,7 @@ export default function DashboardPage() {
         let totalToCollectSum = 0;
         let remainingPaymentsCount = 0;
 
-        for (const loan of activeAndApprovedLoans) {
+        for (const loan of allApprovedLoans) {
           const loanId = loan.id;
           const loanTotal = parseFloat(loan.total_amount) || 0;
           
