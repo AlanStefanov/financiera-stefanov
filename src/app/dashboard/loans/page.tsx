@@ -68,6 +68,7 @@ export default function LoansPage() {
   const [expandedLoanId, setExpandedLoanId] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: number | null }>({ show: false, id: null });
+  const [statusFilter, setStatusFilter] = useState<'all' | 'activos' | 'finalizados'>('all');
   const { showSnackbar } = useSnackbar();
   const searchParams = useSearchParams();
 
@@ -382,6 +383,8 @@ export default function LoansPage() {
 
   if (loading) return <div className="empty-state">Cargando...</div>;
 
+  const filteredLoans = statusFilter === 'all' ? loans : loans.filter(l => statusFilter === 'finalizados' ? l.status === 'finalizado' : l.status !== 'finalizado');
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -389,6 +392,12 @@ export default function LoansPage() {
         <button onClick={() => setShowForm(!showForm)} className="btn btn-primary">
           {showForm ? 'Cancelar' : 'Nuevo Préstamo'}
         </button>
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <button onClick={() => setStatusFilter('all')} className={`btn ${statusFilter === 'all' ? 'btn-primary' : 'btn-secondary'}`}>Todos</button>
+        <button onClick={() => setStatusFilter('activos')} className={`btn ${statusFilter === 'activos' ? 'btn-primary' : 'btn-secondary'}`}>Activos</button>
+        <button onClick={() => setStatusFilter('finalizados')} className={`btn ${statusFilter === 'finalizados' ? 'btn-primary' : 'btn-secondary'}`}>Finalizados</button>
       </div>
 
       {showForm && (
@@ -533,12 +542,12 @@ export default function LoansPage() {
             </tr>
           </thead>
           <tbody>
-            {loans.length === 0 ? (
+            {filteredLoans.length === 0 ? (
               <tr>
                 <td colSpan={10} style={{ textAlign: 'center' }}>No hay préstamos</td>
               </tr>
             ) : (
-              loans.map((loan) => {
+              filteredLoans.map((loan) => {
                 return (
                   <tr key={loan.id}>
                     <td data-label="ID">{loan.id}</td>

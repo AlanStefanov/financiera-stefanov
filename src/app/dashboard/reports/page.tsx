@@ -251,7 +251,7 @@ export default function ReportsPage() {
       {activeTab === 'operators' && (
         <div className={styles['reports-card']}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1.2rem', color: 'var(--text)' }}>Ganancias por Operador</h2>
-          <table className={styles['reports-table']}>
+          <table className={`${styles['reports-table']} ${styles['reports-table-mobile']}`}>
             <thead>
               <tr>
                 <th>Operador</th>
@@ -266,13 +266,13 @@ export default function ReportsPage() {
             <tbody>
               {(operatorEarnings as any[]).map((op) => (
                 <tr key={op.operator_id}>
-                  <td>{op.operator_name} {op.operator_lastname}</td>
-                  <td style={{ textAlign: 'right' }}>{op.total_loans || 0}</td>
-                  <td style={{ textAlign: 'right' }}>{formatCurrency(op.total_principal)}</td>
-                  <td style={{ textAlign: 'right' }}>{formatCurrency(op.total_interest)}</td>
-                  <td style={{ textAlign: 'right' }}>{formatCurrency(op.potential_earnings)}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 700 }}>{formatCurrency(op.actual_earnings)}</td>
-                  <td style={{ textAlign: 'center' }}>
+                  <td data-label="Operador">{op.operator_name} {op.operator_lastname}</td>
+                  <td data-label="Préstamos" style={{ textAlign: 'right' }}>{op.total_loans || 0}</td>
+                  <td data-label="Capital" style={{ textAlign: 'right' }}>{formatCurrency(op.total_principal)}</td>
+                  <td data-label="Interés Total" style={{ textAlign: 'right' }}>{formatCurrency(op.total_interest)}</td>
+                  <td data-label="Ganancia Potencial" style={{ textAlign: 'right' }}>{formatCurrency(op.potential_earnings)}</td>
+                  <td data-label="Ganancia Real" style={{ textAlign: 'right', fontWeight: 700 }}>{formatCurrency(op.actual_earnings)}</td>
+                  <td data-label="Acciones" style={{ textAlign: 'center' }}>
                     {op.operator_email ? (
                       <button
                         onClick={() => setSendEmailModal({ show: true, operatorId: op.operator_id, operatorName: `${op.operator_name} ${op.operator_lastname}`, operatorEmail: op.operator_email })}
@@ -280,18 +280,17 @@ export default function ReportsPage() {
                           background: '#2563eb',
                           color: 'white',
                           border: 'none',
-                          padding: '0.5rem 0.9rem',
+                          padding: '0.35rem 0.75rem',
                           borderRadius: '6px',
                           cursor: 'pointer',
-                          fontSize: '0.95rem',
+                          fontSize: '0.8125rem',
                           fontWeight: 600,
-                          boxShadow: '0 2px 8px 0 rgba(37,99,235,0.08)'
                         }}
                       >
                         ✉️ Enviar Email
                       </button>
                     ) : (
-                      <span style={{ color: '#94a3b8', fontSize: '0.95rem' }}>Sin email</span>
+                      <span style={{ color: '#94a3b8', fontSize: '0.875rem' }}>Sin email</span>
                     )}
                   </td>
                 </tr>
@@ -302,9 +301,9 @@ export default function ReportsPage() {
       )}
 
       {activeTab === 'collections' && (
-        <div className={styles['reports-card']}>
-          <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1.2rem', color: 'var(--text)' }}>Historial de Cobros</h2>
-          <table className={styles['reports-table']}>
+        <div className={`${styles['reports-card']} ${styles['reports-card-compact']}`}>
+          <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--text)' }}>Historial de Cobros</h2>
+          <table className={`${styles['reports-table']} ${styles['reports-table-mobile']}`}>
             <thead>
               <tr>
                 <th>Cliente</th>
@@ -324,12 +323,12 @@ export default function ReportsPage() {
             <tbody>
               {getSortedCollections().slice(0, 50).map((c) => (
                 <tr key={c.id}>
-                  <td>{c.client_name}</td>
-                  <td>{c.operator_name}</td>
-                  <td style={{ textAlign: 'right' }}>{formatCurrency(c.amount)}</td>
-                  <td style={{ textAlign: 'right' }}>{formatCurrency(c.paid_amount)}</td>
-                  <td>{new Date(c.due_date).toLocaleDateString('es-AR')}</td>
-                  <td>
+                  <td data-label="Cliente">{c.client_name}</td>
+                  <td data-label="Operador">{c.operator_name}</td>
+                  <td data-label="Monto" style={{ textAlign: 'right' }}>{formatCurrency(c.amount)}</td>
+                  <td data-label="Pagado" style={{ textAlign: 'right' }}>{formatCurrency(c.paid_amount)}</td>
+                  <td data-label="Vencimiento">{new Date(c.due_date).toLocaleDateString('es-AR')}</td>
+                  <td data-label="Estado">
                     <span className={c.is_paid ? `${styles['reports-status']} ${styles['paid']}` : styles['reports-status']}>
                       {c.is_paid ? 'Pagado' : 'Pendiente'}
                     </span>
@@ -342,12 +341,12 @@ export default function ReportsPage() {
       )}
 
       {activeTab === 'overdue' && (
-        <div className={styles['reports-card']}>
-          <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1.2rem', color: 'var(--danger)' }}>Pagos Atrasados</h2>
+        <div className={`${styles['reports-card']} ${styles['reports-card-compact']}`}>
+          <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--danger)' }}>Pagos Atrasados</h2>
           {(overduePayments as any[]).length === 0 ? (
             <p>No hay pagos atrasados</p>
           ) : (
-            <table className={styles['reports-table']}>
+            <table className={`${styles['reports-table']} ${styles['reports-table-mobile']}`}>
               <thead>
                 <tr>
                   <th>Cliente</th>
@@ -364,11 +363,11 @@ export default function ReportsPage() {
               <tbody>
                 {getSortedOverdue().map((p) => (
                   <tr key={p.id}>
-                    <td>{p.client_name}</td>
-                    <td>{p.client_phone}</td>
-                    <td>{p.operator_name}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 700 }}>{formatCurrency(p.amount)}</td>
-                    <td style={{ color: '#dc2626', fontWeight: 600 }}>{new Date(p.due_date).toLocaleDateString('es-AR')}</td>
+                    <td data-label="Cliente">{p.client_name}</td>
+                    <td data-label="Teléfono">{p.client_phone}</td>
+                    <td data-label="Operador">{p.operator_name}</td>
+                    <td data-label="Monto" style={{ textAlign: 'right', fontWeight: 700 }}>{formatCurrency(p.amount)}</td>
+                    <td data-label="Vencido" style={{ color: '#dc2626', fontWeight: 600 }}>{new Date(p.due_date).toLocaleDateString('es-AR')}</td>
                   </tr>
                 ))}
               </tbody>
