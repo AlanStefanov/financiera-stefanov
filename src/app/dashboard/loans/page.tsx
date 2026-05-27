@@ -63,7 +63,7 @@ export default function LoansPage() {
   const [loanPayments, setLoanPayments] = useState<LoanPayment[]>([]);
   const [user, setUser] = useState<User>({ role: 'operator' });
   const today = new Date().toISOString().split('T')[0];
-  const [formData, setFormData] = useState({ client_id: '', loan_type_id: '', principal_amount: '', fund_source: 'financial' });
+  const [formData, setFormData] = useState({ client_id: '', loan_type_id: '', principal_amount: '', fund_source: 'financial', start_date: '' });
   const [partialPayment, setPartialPayment] = useState<{ payment: LoanPayment; amount: string } | null>(null);
   const [expandedLoanId, setExpandedLoanId] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -91,6 +91,37 @@ export default function LoansPage() {
     const date = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T12:00:00');
     if (isNaN(date.getTime())) return '-';
     return date.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+  };
+
+  const getFirstPaymentDate = (modality: string, startDate: string): Date => {
+    const normalized = normalizeModality(modality);
+    let base: Date;
+    if (startDate) {
+      base = new Date(startDate.includes('T') ? startDate : startDate + 'T12:00:00');
+    } else {
+      base = new Date();
+      base.setHours(12, 0, 0, 0);
+    }
+    if (isNaN(base.getTime())) {
+      base = new Date();
+      base.setHours(12, 0, 0, 0);
+    }
+    if (normalized === 'daily') {
+      const next = new Date(base);
+      next.setDate(base.getDate() + 1);
+      while (next.getDay() === 0 || next.getDay() === 6) next.setDate(next.getDate() + 1);
+      return next;
+    } else if (normalized === 'weekly') {
+      const next = new Date(base);
+      next.setDate(base.getDate() + 7);
+      while (next.getDay() === 0 || next.getDay() === 6) next.setDate(next.getDate() + 1);
+      return next;
+    } else {
+      const next = new Date(base);
+      next.setDate(base.getDate() + 28);
+      while (next.getDay() === 0 || next.getDay() === 6) next.setDate(next.getDate() + 1);
+      return next;
+    }
   };
 
   const getFirstPaymentMessage = (modality: string, startDate: string, loanTypeName?: string) => {
@@ -193,11 +224,12 @@ export default function LoansPage() {
           loan_type_id: parseInt(formData.loan_type_id),
           principal_amount: parseFloat(formData.principal_amount),
           fund_source: formData.fund_source,
+          start_date: formData.start_date || undefined,
         }),
       });
 
       if (res.ok) {
-        setFormData({ client_id: '', loan_type_id: '', principal_amount: '', fund_source: 'financial' });
+        setFormData({ client_id: '', loan_type_id: '', principal_amount: '', fund_source: 'financial', start_date: '' });
         setShowForm(false);
         fetchData();
         showSnackbar('Préstamo creado exitosamente');
@@ -404,9 +436,15 @@ export default function LoansPage() {
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000, padding: '1rem'
+          zIndex: 1000, padding: isMobile ? 0 : '1rem'
         }}>
-          <div className="card" style={{ maxWidth: '500px', width: '100%' }}>
+          <div className="card" style={{
+            maxWidth: isMobile ? '100%' : '500px',
+            width: '100%',
+            height: isMobile ? '100%' : 'auto',
+            borderRadius: isMobile ? 0 : undefined,
+            overflowY: isMobile ? 'auto' : undefined,
+          }}>
             <h3>Nuevo Préstamo</h3>
             {submitting ? (
               <div style={{ textAlign: 'center', padding: '2rem' }}>
@@ -422,8 +460,8 @@ export default function LoansPage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit}>
-                <div style={{ display: 'grid', gap: '1rem' }}>
-                  <div className="form-group">
+                <div style={{ display: 'grid', gap: '1rem', minWidth: 0 }}>
+                  <div className="form-group" style={{ minWidth: 0 }}>
                     <label className="form-label">Cliente</label>
                     <select
                       className="input"
@@ -437,7 +475,7 @@ export default function LoansPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="form-group">
+                  <div className="form-group" style={{ minWidth: 0 }}>
                     <label className="form-label">Tipo de Préstamo</label>
                     <select
                       className="input"
@@ -453,7 +491,7 @@ export default function LoansPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="form-group">
+                  <div className="form-group" style={{ minWidth: 0 }}>
                     <label className="form-label">Monto Principal</label>
                     <input
                       type="number"
@@ -464,7 +502,27 @@ export default function LoansPage() {
                       required
                     />
                   </div>
-                  <div className="form-group">
+                  <div className="form-group" style={{ minWidth: 0 }}>
+                    <label className="form-label">Fecha de Primer Pago</label>
+                    <input
+                      type="date"
+                      className="input"
+                      value={formData.start_date}
+                      min={today}
+                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                    />
+                    {formData.loan_type_id && formData.start_date && (() => {
+                      const selectedType = loanTypes.find(t => t.id === parseInt(formData.loan_type_id));
+                      if (!selectedType) return null;
+                      const firstDate = getFirstPaymentDate(selectedType.modality, formData.start_date);
+                      return (
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>
+                          Se sugiere que la primer cuota sea: {firstDate.toLocaleDateString('es-AR')}
+                        </p>
+                      );
+                    })()}
+                  </div>
+                  <div className="form-group" style={{ minWidth: 0 }}>
                     <label className="form-label">Fuente de Fondos</label>
                     <select className="input" value={formData.fund_source} onChange={(e) => setFormData({ ...formData, fund_source: e.target.value })}>
                       <option value="financial">Capital Financiera</option>
