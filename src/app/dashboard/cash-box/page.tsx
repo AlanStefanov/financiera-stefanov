@@ -82,8 +82,8 @@ export default function CashBoxPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h1 className="page-title">Caja</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <h1 className="page-title" style={{ marginBottom: 0 }}>Caja</h1>
         {user.role === 'admin' && (
           <button onClick={() => setShowForm(!showForm)} className="btn btn-primary">
             {showForm ? 'Cancelar' : 'Nuevo Movimiento'}
@@ -98,26 +98,26 @@ export default function CashBoxPage() {
       )}
 
       <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+        <div className="cashbox-summary" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem' }}>
           <div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>Capital Financiera</p>
-            <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>{formatCurrency(data?.totals.financial || 0)}</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0, marginBottom: '0.25rem' }}>Capital Financiera</p>
+            <p style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--primary)', margin: 0 }}>{formatCurrency(data?.totals.financial || 0)}</p>
           </div>
           <div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>Total Cobrado</p>
-            <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--success)' }}>{formatCurrency(data?.totals.collected_all || 0)}</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0, marginBottom: '0.25rem' }}>Total Cobrado</p>
+            <p style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--success)', margin: 0 }}>{formatCurrency(data?.totals.collected_all || 0)}</p>
           </div>
           <div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>Préstamos Otorgados</p>
-            <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--danger)' }}>{formatCurrency(data?.totals.withdrawn || 0)}</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0, marginBottom: '0.25rem' }}>Préstamos Otorgados</p>
+            <p style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--danger)', margin: 0 }}>{formatCurrency(data?.totals.withdrawn || 0)}</p>
           </div>
           <div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>Disponible</p>
-            <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatCurrency(data?.totals.available || 0)}</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0, marginBottom: '0.25rem' }}>Disponible</p>
+            <p style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>{formatCurrency(data?.totals.available || 0)}</p>
           </div>
           <div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>Caja Completa</p>
-            <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatCurrency(data?.totals.caja_completa || 0)}</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0, marginBottom: '0.25rem' }}>Caja Completa</p>
+            <p style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>{formatCurrency(data?.totals.caja_completa || 0)}</p>
           </div>
         </div>
       </div>
@@ -166,7 +166,7 @@ export default function CashBoxPage() {
 
       <div className="card">
         <h2 style={{ marginBottom: '1rem' }}>Movimientos</h2>
-        <table className="table">
+        <table className="table table-mobile-card">
           <thead>
             <tr>
               <th>Fecha</th>
@@ -184,15 +184,15 @@ export default function CashBoxPage() {
             ) : (
               data?.movements.map((m) => (
                 <tr key={m.id}>
-                  <td>{new Date(m.created_at).toLocaleDateString('es-AR')}</td>
-                  <td>
+                  <td data-label="Fecha">{new Date(m.created_at).toLocaleDateString('es-AR')}</td>
+                  <td data-label="Tipo">
                     <span className={`badge ${m.type === 'deposit' ? 'badge-primary' : m.type === 'collection' ? 'badge-success' : 'badge-warning'}`}>
                       {m.type === 'deposit' ? 'Depósito' : m.type === 'collection' ? 'Cobranza' : 'Préstamo'}
                     </span>
                   </td>
-                  <td>{formatCurrency(m.amount)}</td>
-                  <td>{m.description || '-'}</td>
-                  <td>{m.created_by_name || '-'}</td>
+                  <td data-label="Monto">{formatCurrency(m.amount)}</td>
+                  <td data-label="Descripción">{m.description || '-'}</td>
+                  <td data-label="Usuario">{m.created_by_name || '-'}</td>
                 </tr>
               ))
             )}

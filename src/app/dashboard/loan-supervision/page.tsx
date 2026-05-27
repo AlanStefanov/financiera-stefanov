@@ -81,9 +81,9 @@ export default function LoanSupervisionPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h1 className="page-title">Supervisión de Préstamos</h1>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <h1 className="page-title" style={{ marginBottom: 0 }}>Supervisión de Préstamos</h1>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <button onClick={() => setFilter('all')} className={`btn ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}>Todos</button>
           <button onClick={() => setFilter('financial')} className={`btn ${filter === 'financial' ? 'btn-primary' : 'btn-secondary'}`}>Financial</button>
           <button onClick={() => setFilter('collections')} className={`btn ${filter === 'collections' ? 'btn-primary' : 'btn-secondary'}`}>Cobranzas</button>
