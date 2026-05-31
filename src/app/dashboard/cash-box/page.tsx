@@ -11,6 +11,8 @@ interface CashBoxData {
     available: number;
     collected_all?: number;
     caja_completa?: number;
+    deposits?: number;
+    egresos?: number;
   };
 }
 
@@ -56,10 +58,17 @@ export default function CashBoxPage() {
     setMessage('');
     try {
       const token = localStorage.getItem('token');
+      const body: any = { amount: parseFloat(form.amount), description: form.description };
+      if (form.type === 'retorno') {
+        body.type = 'withdrawal';
+        body.is_egreso = true;
+      } else {
+        body.type = form.type;
+      }
       const res = await fetch('/api/cash-box', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...form, amount: parseFloat(form.amount) }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         setMessage('✓ Movimiento registrado');
@@ -102,6 +111,9 @@ export default function CashBoxPage() {
           <div>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0, marginBottom: '0.25rem' }}>Capital Financiera</p>
             <p style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--primary)', margin: 0 }}>{formatCurrency(data?.totals.financial || 0)}</p>
+            <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', margin: 0 }}>
+              Depósitos: {formatCurrency(data?.totals.deposits || 0)} | Retornos: -{formatCurrency(data?.totals.egresos || 0)}
+            </p>
           </div>
           <div>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0, marginBottom: '0.25rem' }}>Total Cobrado</p>
@@ -129,11 +141,12 @@ export default function CashBoxPage() {
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">Tipo</label>
-                <select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                  <option value="deposit">Depósito (capital nueva)</option>
-                  <option value="collection">Cobranza (dinero recuperado)</option>
-                  <option value="withdrawal">Préstamo otortoado</option>
-                </select>
+                  <select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                    <option value="deposit">Depósito (capital nueva)</option>
+                    <option value="collection">Cobranza (dinero recuperado)</option>
+                    <option value="withdrawal">Préstamo otorgado</option>
+                    <option value="retorno">Retorno (devolución de operador)</option>
+                  </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Monto</label>
@@ -186,8 +199,8 @@ export default function CashBoxPage() {
                 <tr key={m.id}>
                   <td data-label="Fecha">{new Date(m.created_at).toLocaleDateString('es-AR')}</td>
                   <td data-label="Tipo">
-                    <span className={`badge ${m.type === 'deposit' ? 'badge-primary' : m.type === 'collection' ? 'badge-success' : 'badge-warning'}`}>
-                      {m.type === 'deposit' ? 'Depósito' : m.type === 'collection' ? 'Cobranza' : 'Préstamo'}
+                    <span className={`badge ${m.is_egreso ? 'badge-danger' : m.type === 'deposit' ? 'badge-primary' : m.type === 'collection' ? 'badge-success' : 'badge-warning'}`}>
+                      {m.is_egreso ? 'Retorno' : m.type === 'deposit' ? 'Depósito' : m.type === 'collection' ? 'Cobranza' : 'Préstamo'}
                     </span>
                   </td>
                   <td data-label="Monto">{formatCurrency(m.amount)}</td>

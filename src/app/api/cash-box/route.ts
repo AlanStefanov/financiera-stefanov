@@ -23,12 +23,13 @@ export async function GET(request: NextRequest) {
     }
 
     let cashBox;
-    let totalFinancial;
+    let totalDeposits;
     let totalCollections;
     let totalWithdrawn;
     let totalCollectedAll;
     let loansFromFinancial;
     let loansFromCollections;
+    let totalEgresos;
 
     if (user.role === 'admin') {
       cashBox = await all(`
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
         ORDER BY cb.created_at DESC
       `);
 
-      totalFinancial = await get(`
+      totalDeposits = await get(`
         SELECT COALESCE(SUM(amount), 0) as total 
         FROM cash_box 
         WHERE type = 'deposit'
@@ -48,6 +49,12 @@ export async function GET(request: NextRequest) {
         SELECT COALESCE(SUM(amount), 0) as total 
         FROM cash_box 
         WHERE type = 'collection'
+      `);
+
+      totalEgresos = await get(`
+        SELECT COALESCE(SUM(amount), 0) as total 
+        FROM cash_box 
+        WHERE is_egreso = 1
       `);
 
       totalWithdrawn = await get(`
@@ -82,7 +89,7 @@ export async function GET(request: NextRequest) {
         ORDER BY cb.created_at DESC
       `, [user.id, user.id]);
 
-      totalFinancial = await get(`
+      totalDeposits = await get(`
         SELECT COALESCE(SUM(amount), 0) as total 
         FROM cash_box 
         WHERE type = 'deposit' AND assigned_to = ?
@@ -93,6 +100,12 @@ export async function GET(request: NextRequest) {
         FROM cash_box 
         WHERE type = 'collection' AND created_by = ?
       `, [user.id]);
+
+      totalEgresos = await get(`
+        SELECT COALESCE(SUM(amount), 0) as total 
+        FROM cash_box 
+        WHERE is_egreso = 1 AND (created_by = ? OR assigned_to = ?)
+      `, [user.id, user.id]);
 
       totalWithdrawn = await get(`
         SELECT COALESCE(SUM(principal_amount), 0) as total 
@@ -119,17 +132,23 @@ export async function GET(request: NextRequest) {
       `, [user.id]);
     }
 
+    const depositsTotal = Number(totalDeposits?.total || 0);
+    const egresosTotal = Number(totalEgresos?.total || 0);
+    const financialTotal = depositsTotal - egresosTotal;
+
     return NextResponse.json({
       movements: cashBox,
       totals: {
-        financial: totalFinancial?.total || 0,
+        financial: financialTotal,
         collections: totalCollections?.total || 0,
         withdrawn: totalWithdrawn?.total || 0,
         loans_from_financial: loansFromFinancial?.total || 0,
         loans_from_collections: loansFromCollections?.total || 0,
         collected_all: totalCollectedAll?.total || 0,
-        available: Number(totalFinancial?.total || 0) - Number(loansFromFinancial?.total || 0),
-        caja_completa: Number(totalCollectedAll?.total || 0) - Number(loansFromCollections?.total || 0)
+        deposits: depositsTotal,
+        egresos: egresosTotal,
+        available: 0,
+        caja_completa: Number(totalCollectedAll?.total || 0) - Number(loansFromCollections?.total || 0) - egresosTotal
       }
     });
   } catch (error) {
@@ -148,22 +167,25 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { amount, type, description, assigned_to } = body;
+    const { amount, type, description, assigned_to, is_egreso } = body;
 
-    if (!amount || !type || !['deposit', 'collection', 'withdrawal'].includes(type)) {
+    const effectiveType = is_egreso ? 'withdrawal' : type;
+    if (!amount || !effectiveType || !['deposit', 'collection', 'withdrawal'].includes(effectiveType)) {
       return NextResponse.json({ message: 'Datos inválidos' }, { status: 400 });
     }
 
     let assignedToUser = null;
-    if (type === 'deposit' && user.role === 'admin' && assigned_to) {
+    if (effectiveType === 'deposit' && user.role === 'admin' && assigned_to) {
       assignedToUser = assigned_to;
-    } else if (type === 'deposit') {
+    } else if (effectiveType === 'deposit') {
       assignedToUser = user.id;
     }
 
+    const egresoValue = is_egreso ? 1 : 0;
+
     await run(
-      'INSERT INTO cash_box (amount, type, description, created_by, assigned_to) VALUES (?, ?, ?, ?, ?)',
-      [amount, type, description || null, user.id, assignedToUser]
+      'INSERT INTO cash_box (amount, type, description, created_by, assigned_to, is_egreso) VALUES (?, ?, ?, ?, ?, ?)',
+      [amount, effectiveType, description || null, user.id, assignedToUser, egresoValue]
     );
 
     return NextResponse.json({ message: 'Movimiento registrado' }, { status: 201 });
