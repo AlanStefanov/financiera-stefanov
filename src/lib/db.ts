@@ -176,13 +176,16 @@ export const initializeDatabase = async () => {
         CREATE TABLE IF NOT EXISTS cash_box (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           amount REAL NOT NULL,
-          type TEXT NOT NULL CHECK(type IN ('deposit', 'collection', 'withdrawal')),
+          type TEXT NOT NULL CHECK(type IN ('deposit', 'collection', 'withdrawal', 'egreso')),
           description TEXT,
           created_by INTEGER,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (created_by) REFERENCES users(id)
         )
       `);
+    } catch (e) { /* ignore if exists */ }
+    try {
+      await getClient().execute('ALTER TABLE cash_box ADD COLUMN is_egreso INTEGER DEFAULT 0');
     } catch (e) { /* ignore if exists */ }
     await getClient().execute("UPDATE loans SET approved_at = updated_at WHERE status = 'aprobado' AND approved_at IS NULL");
     console.log('Base de datos Turso inicializada correctamente');
