@@ -12,6 +12,16 @@ const getNextBusinessDay = (date: Date): Date => {
   return next;
 };
 
+const ensureBusinessDay = (date: Date): Date => {
+  const d = new Date(date);
+  if (d.getUTCDay() === 0) {
+    d.setUTCDate(d.getUTCDate() + 1);
+  } else if (d.getUTCDay() === 6) {
+    d.setUTCDate(d.getUTCDate() + 2);
+  }
+  return d;
+};
+
 export async function GET(request: NextRequest) {
   try {
     await getDB();
@@ -93,7 +103,7 @@ export async function POST(request: NextRequest) {
       let currentDate = new Date(existingLoan.start_date as string);
       currentDate = loanType.modality === 'daily'
         ? getNextBusinessDay(currentDate)
-        : new Date(currentDate.setDate(currentDate.getDate() + intervalDays));
+        : ensureBusinessDay(new Date(currentDate.setDate(currentDate.getDate() + intervalDays)));
 
       for (let i = 0; i < numPayments; i++) {
         await run(
@@ -102,7 +112,7 @@ export async function POST(request: NextRequest) {
         );
         currentDate = loanType.modality === 'daily'
           ? getNextBusinessDay(currentDate)
-          : new Date(currentDate.setDate(currentDate.getDate() + intervalDays));
+          : ensureBusinessDay(new Date(currentDate.setDate(currentDate.getDate() + intervalDays)));
       }
 
       const loan = await get('SELECT * FROM loans WHERE id = ?', [existingLoan.id]);
