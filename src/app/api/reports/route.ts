@@ -16,6 +16,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Solo admins pueden acceder' }, { status: 403 });
     }
 
+    const operatorPayments = await all(`
+      SELECT 
+        cb.assigned_to as operator_id,
+        COALESCE(SUM(cb.amount), 0) as total_paid
+      FROM cash_box cb
+      WHERE cb.description LIKE 'Pago a operador%'
+        AND cb.is_egreso = 1
+      GROUP BY cb.assigned_to
+    `);
+    const paymentByOperatorId = Object.fromEntries(
+      (operatorPayments as any[]).map((p: any) => [p.operator_id, p.total_paid])
+    );
+
     const operatorEarnings = await all(`
       SELECT 
         u.id as operator_id,
@@ -23,25 +36,25 @@ export async function GET(request: NextRequest) {
         u.lastname as operator_lastname,
         u.email as operator_email,
         COUNT(DISTINCT l.id) as total_loans,
-        SUM(l.principal_amount) as total_principal,
-        SUM(l.total_amount) as total_with_interest,
-        SUM(l.total_amount - l.principal_amount) as total_interest,
-        SUM(CASE 
+        COALESCE(SUM(l.principal_amount), 0) as total_principal,
+        COALESCE(SUM(l.total_amount), 0) as total_with_interest,
+        COALESCE(SUM(l.total_amount - l.principal_amount), 0) as total_interest,
+        COALESCE(SUM(CASE 
           WHEN l.fund_source = 'financial' OR l.fund_source IS NULL THEN (l.total_amount - l.principal_amount) * 0.5 
           WHEN l.fund_source = 'collections' THEN (l.total_amount - l.principal_amount) * 0.3 
           ELSE (l.total_amount - l.principal_amount) * 0.5 
-        END) as potential_earnings,
-        SUM(CASE 
-          WHEN l.status = 'finalizado' AND (l.fund_source = 'financial' OR l.fund_source IS NULL) THEN (l.total_amount - l.principal_amount) * 0.5 
-          WHEN l.status = 'finalizado' AND l.fund_source = 'collections' THEN (l.total_amount - l.principal_amount) * 0.3 
-          ELSE 0 
-        END) as actual_earnings
+        END), 0) as potential_earnings
       FROM users u
       LEFT JOIN loans l ON u.id = l.operator_id
       WHERE u.role = 'operator'
       GROUP BY u.id
-      ORDER BY actual_earnings DESC
+      ORDER BY potential_earnings DESC
     `);
+
+    const operatorEarningsWithPayments = (operatorEarnings as any[]).map((op: any) => ({
+      ...op,
+      actual_earnings: paymentByOperatorId[op.operator_id] || 0,
+    }));
 
     const totalStats = await get(`
       SELECT 
@@ -103,16 +116,16 @@ export async function GET(request: NextRequest) {
     `);
 
     return NextResponse.json({
-      operatorEarnings,
+      operatorEarnings: operatorEarningsWithPayments,
       totalStats,
       collections,
       overduePayments,
       summary: {
-        totalOperators: operatorEarnings.length,
+        totalOperators: operatorEarningsWithPayments.length,
         totalLoans: totalStats?.total_loans || 0,
         totalPrincipal: totalStats?.total_principal || 0,
         totalInterest: totalStats?.total_interest || 0,
-        totalToPayOperators: (operatorEarnings as any[]).reduce((sum, o) => sum + (o.actual_earnings || 0), 0),
+        totalToPayOperators: operatorEarningsWithPayments.reduce((sum, o) => sum + (o.actual_earnings || 0), 0),
         overdueCount: overduePayments.length,
       }
     });
