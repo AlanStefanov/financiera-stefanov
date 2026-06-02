@@ -30,14 +30,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const fetchSettings = async () => {
     try {
-      const stored = localStorage.getItem('user');
-      if (!stored) {
+      const token = localStorage.getItem('token');
+      if (!token) {
         setLoading(false);
         return;
       }
 
       const res = await fetch('/api/settings', {
-        headers: { Authorization: `Bearer ${JSON.parse(stored).token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (res.ok) {

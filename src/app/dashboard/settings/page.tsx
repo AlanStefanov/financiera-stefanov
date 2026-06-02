@@ -28,11 +28,11 @@ export default function SettingsPage() {
 
   const fetchSettings = async () => {
     try {
-      const stored = localStorage.getItem('user');
-      if (!stored) return;
+      const token = localStorage.getItem('token');
+      if (!token) return;
       
       const res = await fetch('/api/settings', {
-        headers: { Authorization: `Bearer ${JSON.parse(stored).token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
       setSettings(data);

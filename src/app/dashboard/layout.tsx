@@ -196,7 +196,7 @@ if (user.role === 'admin') {
         <footer className="footer">
         <div className="container footer-content">
           <p className="footer-text">© 2026 Microcréditos Stefanov. Todos los derechos reservados.</p>
-          <p className="footer-text">Sistema de Gestión de Préstamos v1.7.0</p>
+          <p className="footer-text">Sistema de Gestión de Préstamos v1.10.0</p>
         </div>
       </footer>
 
