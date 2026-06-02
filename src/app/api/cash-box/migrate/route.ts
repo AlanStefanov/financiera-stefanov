@@ -44,8 +44,6 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ message: `Se insertaron ${inserted} cobranzas`, total: paidPayments.length });
-
-    return NextResponse.json({ message: `Se insertaron ${inserted} cobranzas` });
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json({ error: 'Error' }, { status: 500 });
