@@ -31,6 +31,17 @@ const ensureBusinessDay = (date: Date): Date => {
   return d;
 };
 
+const advanceDate = (date: Date, modality: string): Date => {
+  if (modality === 'daily') return getNextBusinessDay(date);
+  const d = new Date(date);
+  if (modality === 'monthly') {
+    d.setMonth(d.getMonth() + 1);
+  } else {
+    d.setDate(d.getDate() + 7);
+  }
+  return ensureBusinessDay(d);
+};
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -114,25 +125,19 @@ export async function PUT(
       if (loanType) {
         const numPayments = loanType.modality === 'daily' ? 20 : loanType.modality === 'weekly' ? 4 : Number(loanType.duration_months);
         const paymentAmount = (loan.total_amount as number) / numPayments;
-        const intervalDays = loanType.modality === 'weekly' ? 7 : loanType.modality === 'monthly' ? 28 : 1;
         const baseDate = loan.approved_at
           ? new Date(loan.approved_at as string)
           : (loan.status === 'aprobado' && loan.updated_at
             ? new Date(loan.updated_at as string)
             : new Date(loan.start_date as string));
-        let currentDate = new Date(baseDate);
-        currentDate = loanType.modality === 'daily'
-          ? getNextBusinessDay(currentDate)
-          : ensureBusinessDay(new Date(currentDate.setDate(currentDate.getDate() + intervalDays)));
+        let currentDate = advanceDate(new Date(baseDate), loanType.modality as string);
 
         for (let i = 0; i < numPayments; i++) {
           await run(
             'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
             [parseInt(id), i + 1, paymentAmount, currentDate.toISOString()]
           );
-          currentDate = loanType.modality === 'daily'
-            ? getNextBusinessDay(currentDate)
-            : ensureBusinessDay(new Date(currentDate.setDate(currentDate.getDate() + intervalDays)));
+          currentDate = advanceDate(currentDate, loanType.modality as string);
         }
       }
       
@@ -185,21 +190,15 @@ export async function PUT(
 
           const numPayments = loanType.modality === 'daily' ? 20 : loanType.modality === 'weekly' ? 4 : Number(loanType.duration_months);
           const paymentAmount = (currentLoan?.total_amount as number) / numPayments;
-          const intervalDays = loanType.modality === 'weekly' ? 7 : loanType.modality === 'monthly' ? 28 : 1;
           
-          let currentDate = new Date();
-          currentDate = loanType.modality === 'daily'
-            ? getNextBusinessDay(currentDate)
-            : ensureBusinessDay(new Date(currentDate.setDate(currentDate.getDate() + intervalDays)));
+          let currentDate = advanceDate(new Date(), loanType.modality as string);
 
           for (let i = 0; i < numPayments; i++) {
             await run(
               'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
               [parseInt(id), i + 1, paymentAmount, currentDate.toISOString()]
             );
-            currentDate = loanType.modality === 'daily'
-              ? getNextBusinessDay(currentDate)
-              : ensureBusinessDay(new Date(currentDate.setDate(currentDate.getDate() + intervalDays)));
+            currentDate = advanceDate(currentDate, loanType.modality as string);
           }
         }
       }
