@@ -273,6 +273,28 @@ export default function ReportsPage() {
                   <td data-label="Ganancia Potencial" style={{ textAlign: 'right' }}>{formatCurrency(op.potential_earnings)}</td>
                   <td data-label="Ganancia Real" style={{ textAlign: 'right', fontWeight: 700 }}>{formatCurrency(op.actual_earnings)}</td>
                   <td data-label="Acciones" style={{ textAlign: 'center' }}>
+                    {op.operator_phone ? (
+                      <button
+                        onClick={() => {
+                          const phone = (op.operator_phone || '').replace(/\D/g, '');
+                          const count = overduePayments.filter((p: any) => p.operator_id === op.operator_id).length;
+                          const msg = `Buenas ${op.operator_name} ${op.operator_lastname}, tienes ${count} pago(s) atrasado(s), favor validar con tus clientes.`;
+                          window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+                        }}
+                        style={{
+                          background: '#25D366',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.35rem 0.6rem',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '0.8125rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        📱 WhatsApp
+                      </button>
+                    ) : null}
                     {op.operator_email ? (
                       <button
                         onClick={() => setSendEmailModal({ show: true, operatorId: op.operator_id, operatorName: `${op.operator_name} ${op.operator_lastname}`, operatorEmail: op.operator_email })}
@@ -358,18 +380,44 @@ export default function ReportsPage() {
                   <th data-sortable onClick={() => handleSort('overdue', 'due_date')}>
                     Vencido {getSortEmoji('overdue', 'due_date')}
                   </th>
+                  <th style={{ textAlign: 'center' }}>WhatsApp</th>
                 </tr>
               </thead>
               <tbody>
-                {getSortedOverdue().map((p) => (
-                  <tr key={p.id}>
-                    <td data-label="Cliente">{p.client_name}</td>
-                    <td data-label="Teléfono">{p.client_phone}</td>
-                    <td data-label="Operador">{p.operator_name}</td>
-                    <td data-label="Monto" style={{ textAlign: 'right', fontWeight: 700 }}>{formatCurrency(p.amount)}</td>
-                    <td data-label="Vencido" style={{ color: '#dc2626', fontWeight: 600 }}>{new Date(p.due_date).toLocaleDateString('es-AR')}</td>
-                  </tr>
-                ))}
+                {getSortedOverdue().map((p) => {
+                  const dueDate = new Date(p.due_date.includes('T') ? p.due_date : p.due_date + 'T12:00:00');
+                  const daysOverdue = isNaN(dueDate.getTime()) ? 0 : Math.ceil((new Date().getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+                  return (
+                    <tr key={p.id}>
+                      <td data-label="Cliente">{p.client_name}</td>
+                      <td data-label="Teléfono">{p.client_phone}</td>
+                      <td data-label="Operador">{p.operator_name}</td>
+                      <td data-label="Monto" style={{ textAlign: 'right', fontWeight: 700 }}>{formatCurrency(p.amount)}</td>
+                      <td data-label="Vencido" style={{ color: '#dc2626', fontWeight: 600 }}>{new Date(p.due_date).toLocaleDateString('es-AR')}</td>
+                      <td data-label="WhatsApp" style={{ textAlign: 'center' }}>
+                        <button
+                          onClick={() => {
+                            const phone = (p.client_phone || '').replace(/\D/g, '');
+                            const msg = `Hola ${p.client_name}, te recordamos que tienes un pago atrasado de ${formatCurrency(p.amount)} que venció el ${new Date(p.due_date).toLocaleDateString('es-AR')}. Llevas ${daysOverdue} día${daysOverdue > 1 ? 's' : ''} de atraso. Por favor comunicate con tu operador ${p.operator_name} para regularizar tu situación.`;
+                            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+                          }}
+                          style={{
+                            background: '#25D366',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.35rem 0.6rem',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.8125rem',
+                            fontWeight: 600,
+                          }}
+                        >
+                          📱 WhatsApp
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}

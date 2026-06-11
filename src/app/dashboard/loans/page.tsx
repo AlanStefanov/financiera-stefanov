@@ -328,7 +328,7 @@ export default function LoansPage() {
     const dueDate = new Date(payment.due_date.includes('T') ? payment.due_date : payment.due_date + 'T12:00:00');
     const daysOverdue = isNaN(dueDate.getTime()) ? 0 : Math.ceil((new Date().getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
     const message = `Hola ${clientName}, te recordamo$ que tienes una cuota atrasada de $${payment.amount.toLocaleString('es-AR')} que venció el ${formatDate(payment.due_date)}. \n\nLlevas ${daysOverdue} día${daysOverdue > 1 ? 's' : ''} de atraso. Por favor comunicate con nosotros para regularizar tu situación.\n\nTu operador de créditos te espera para ayudarte.`;
-    window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const handleUpdateStatus = async (loanId: number, newStatus: string) => {
@@ -358,7 +358,7 @@ export default function LoansPage() {
         const modalityText = loanModality === 'daily' ? 'Pago Diario' : loanModality === 'weekly' ? 'Pago Semanal' : 'Pago Mensual';
         const endDate = loan.end_date ? new Date(loan.end_date).toLocaleDateString('es-AR') : 'N/A';
         const message = `¡Hola ${loan.client_name}! Tu préstamo ha sido aprobado.\n\nMonto: $${loan.principal_amount.toLocaleString()}\nTotal: $${loan.total_amount.toLocaleString()}\nTipo: ${modalityText}\nCuotas: ${installments} de $${installmentAmount.toLocaleString()}\nFecha de fin: ${endDate}\n\nTu operador de créditos es: ${operatorDisplay}. Comuníquese con él para gestionar los pagos.\n\nGracias por confiar en Microcréditos Stefanov.`;
-        window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
+        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
       }
     } catch (error) {
       console.error('Error updating status:', error);
