@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
         u.name as operator_name,
         u.lastname as operator_lastname,
         u.email as operator_email,
+        u.phone as operator_phone,
         COUNT(DISTINCT l.id) as total_loans,
         COALESCE(SUM(l.principal_amount), 0) as total_principal,
         COALESCE(SUM(l.total_amount), 0) as total_with_interest,
