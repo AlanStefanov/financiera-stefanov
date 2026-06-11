@@ -22,6 +22,17 @@ const ensureBusinessDay = (date: Date): Date => {
   return d;
 };
 
+const advanceDate = (date: Date, modality: string): Date => {
+  if (modality === 'daily') return getNextBusinessDay(date);
+  const d = new Date(date);
+  if (modality === 'monthly') {
+    d.setMonth(d.getMonth() + 1);
+  } else {
+    d.setDate(d.getDate() + 7);
+  }
+  return ensureBusinessDay(d);
+};
+
 export async function GET(request: NextRequest) {
   try {
     await getDB();
@@ -98,21 +109,15 @@ export async function POST(request: NextRequest) {
 
       const numPayments = Number(loanType.modality === 'daily' ? 20 : loanType.modality === 'weekly' ? 4 : loanType.duration_months);
       const paymentAmount = Number(existingLoan.total_amount) / numPayments;
-      const intervalDays = loanType.modality === 'weekly' ? 7 : loanType.modality === 'monthly' ? 28 : 1;
 
-      let currentDate = new Date(existingLoan.start_date as string);
-      currentDate = loanType.modality === 'daily'
-        ? getNextBusinessDay(currentDate)
-        : ensureBusinessDay(new Date(currentDate.setDate(currentDate.getDate() + intervalDays)));
+      let currentDate = advanceDate(new Date(existingLoan.start_date as string), loanType.modality as string);
 
       for (let i = 0; i < numPayments; i++) {
         await run(
           'INSERT INTO loan_payments (loan_id, payment_number, amount, due_date, is_paid) VALUES (?, ?, ?, ?, 0)',
           [existingLoan.id, i + 1, paymentAmount, currentDate.toISOString()]
         );
-        currentDate = loanType.modality === 'daily'
-          ? getNextBusinessDay(currentDate)
-          : ensureBusinessDay(new Date(currentDate.setDate(currentDate.getDate() + intervalDays)));
+        currentDate = advanceDate(currentDate, loanType.modality as string);
       }
 
       const loan = await get('SELECT * FROM loans WHERE id = ?', [existingLoan.id]);

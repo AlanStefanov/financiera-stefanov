@@ -14,6 +14,8 @@ export async function GET(request: NextRequest) {
 
     const decoded = jwt.verify(token, getJwtSecret()) as { id: number; role: string };
 
+    const todayArg = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+
     let query = `
       SELECT
         lp.id,
@@ -30,11 +32,11 @@ export async function GET(request: NextRequest) {
       JOIN clients c ON l.client_id = c.id
       JOIN users u ON l.operator_id = u.id
       WHERE lp.is_paid = 0
-        AND lp.due_date < datetime('now')
-        AND l.status != 'orden'
+        AND date(lp.due_date) < ?
+        AND l.status = 'aprobado'
     `;
 
-    const params: Array<number> = [];
+    const params: Array<string | number> = [todayArg];
     if (decoded.role !== 'admin') {
       query += ' AND l.operator_id = ?';
       params.push(decoded.id);
@@ -42,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     query += ' ORDER BY lp.due_date ASC';
 
-    const overduePayments = params.length > 0 ? await all(query, params) : await all(query);
+    const overduePayments = await all(query, params);
 
     return NextResponse.json(overduePayments);
   } catch (error: any) {

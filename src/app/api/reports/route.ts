@@ -16,6 +16,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Solo admins pueden acceder' }, { status: 403 });
     }
 
+    const todayArg = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+
     const operatorPayments = await all(`
       SELECT 
         cb.assigned_to as operator_id,
@@ -63,6 +65,7 @@ export async function GET(request: NextRequest) {
         SUM(l.total_amount) as total_with_interest,
         SUM(l.total_amount - l.principal_amount) as total_interest
       FROM loans l
+      WHERE l.status = 'aprobado'
     `);
 
     const totalPaymentsMade = await get(`
@@ -111,9 +114,9 @@ export async function GET(request: NextRequest) {
       JOIN loans l ON lp.loan_id = l.id
       JOIN clients c ON l.client_id = c.id
       JOIN users u ON l.operator_id = u.id
-      WHERE lp.is_paid = 0 AND lp.due_date < datetime('now') AND l.status != 'orden'
+      WHERE lp.is_paid = 0 AND date(lp.due_date) < ? AND l.status = 'aprobado'
       ORDER BY lp.due_date ASC
-    `);
+    `, [todayArg]);
 
     return NextResponse.json({
       operatorEarnings: operatorEarningsWithPayments,
